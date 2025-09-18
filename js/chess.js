@@ -1,6 +1,7 @@
-$(function(){
-	var initialPosition = {
-		a8: 'rook-black',
+class Tabuleiro {
+	constructor(){
+		this.initialPosition= {
+			a8: 'rook-black',
 		b8: 'knight-black',
 		c8: 'bishop-black',
 		d8: 'queen-black',
@@ -35,22 +36,10 @@ $(function(){
 		f1: 'bishop-white',
 		g1: 'knight-white',
 		h1: 'rook-white'
-	};
-
-
-	function newGame(){
-		$('.square-board').each(function(){
-			var square = $(this);
-			var sq = square.attr('id');
-
-			if(objSearchIndex(initialPosition, sq) != null){
-				//console.log('achou');
-				$(this).html('<div class="piece '+initialPosition[sq]+'"></div>');
-			}
-		});
+		};
 	}
-
-	function printBoard(){
+	// Monta o tabuleiro (os 64 quadrados)
+	printBoard(){
 		var light = 1;
 		var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 		for(var l = 8; l>=1; --l){
@@ -63,29 +52,24 @@ $(function(){
 			light ^= 1;
 		}
 	}
-
-	printBoard();
-	newGame();
-
-	function objSearch(obj, valor){
-		var retorno = null;
-		$.each(obj, function(i, val){
-			if(val == valor){
-				retorno = i;
+	/// Colocar as peça nas posiçao inicias
+	inicializarPecas(){
+		$('.square-board').each((_, square)=> {
+			const sq = $(square).attr('id');
+			if (this.initialPosition.hasOwnProperty(sq)){
+				$(square).html(`<div class="piece ${this.initialPosition[sq]}"></div>`)
 			}
 		});
 
-		return retorno;
 	}
-
-	function objSearchIndex(obj, index){
-		var retorno = null;
-		$.each(obj, function(i, val){
-			if(i == index){
-				retorno = i;
-			}
-		});
-
-		return retorno;
+	 // Método para iniciar o jogo (monta o tabuleiro e posiciona as peças)
+	inicar(){
+		this.printBoard();
+		this.inicializarPecas();
 	}
+}
+// funçao aprao uso
+$(function(){
+	const tabuleiro = new Tabuleiro();
+	tabuleiro.inicar()
 });
