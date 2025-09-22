@@ -23,13 +23,25 @@ body{background:#eee;}
 	height:512px;
 }
 
+.square-board.highlight {
+  outline: 3px solid yellow; /* ou qualquer cor que queira */
+  box-sizing: border-box;
+}
+
 .board .square-board{
 	float:left;
 	width:64px;
 	height:64px;
 }
-.square-board.possible{background: #069}
-.dark{background:gray;}
+
+.square-board.possible {
+    outline: 2px solid #5FBCD3; /* ou qualquer cor que queira */
+    box-sizing: border-box;
+    background-color: #AFDDE9; /* fundo semi-transparente */
+}
+
+
+.dark{background:#4B7399;}
 .light{background:white;}
 
 .box .stats{
