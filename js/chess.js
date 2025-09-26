@@ -114,6 +114,52 @@ class Movimento {
 				}
 			}
 		}
+		
+		//logica do bispo
+		if(pieceClass.includes('bishop')){
+			//determinar da cor da eça atual
+			let corPeca = pieceClass.includes('white') ? 'white' : 'black';
+
+			//define as 4 direções
+			const direcoes = [
+				[1, 1],   // Direita e Cima 
+                [-1, 1],  // Esquerda e Cima
+                [1, -1],  // Direita e Baixo 
+                [-1, -1]  // Esquerda e Baixo
+			];
+
+			//itera em cada uma das 4 direções
+			for (const [colDelta, rowDelta] of direcoes){
+				for(let step = 1; step <= 7; step ++){	//o bispo pode andar até 7 casas no tabuleiro
+					let newIdxCol = idxCol + colDelta * step;
+					let newLinha = linha + rowDelta * step;
+
+					//verifica o limite do tabuleiro(8x8)
+					if(newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8){
+						break
+					}
+
+					let destinoId = colunas[newIdxCol] + newLinha;
+					let $pecaDestino = $('#' + destinoId + ' .piece');
+
+					//verifica obstruçõese destino
+					if($pecaDestino.length === 0){
+						movimentos.push(destinoId);		//casa vazia, movimento possivel
+					} else {
+						//casa ocupada, captura da peça
+						let classePecaDestino = $pecaDestino.attr('class');
+
+						if(classePecaDestino.includes(corPeca)){
+							break; //peça aliada
+						} else {
+							movimentos.push(destinoId);		//peça inimiga, captura
+							break		
+						}
+					}
+				}
+			}
+
+		}
 
 		return movimentos;
 	}
