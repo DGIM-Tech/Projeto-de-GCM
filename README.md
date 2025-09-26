@@ -11,7 +11,7 @@ mas se estende a habilidades cognitivas essenciais que podem ser desenvolvidas d
 
 * **`main`**: Contém a última versão de código estável e pronta para produção.
 * **`develop`**: É a branch de integração, onde as novas funcionalidades são mescladas apos a aprovaçãp em `test`.
-* * **`teste`**: Uma brach edicada para testes de novas funcionalidaades e correções, garantindo a qualidade antes de migrar para `main`.
+* **`teste`**: Uma brach edicada para testes de novas funcionalidaades e correções, garantindo a qualidade antes de migrar para `main`.
 
 ## 📝 Documentação
    #### 1º unidade
