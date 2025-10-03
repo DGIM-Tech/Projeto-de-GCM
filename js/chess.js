@@ -15,7 +15,6 @@ class Tabuleiro {
 		};
 	}
 
-	// Monta o tabuleiro
 	printBoard() {
 		var light = 1;
 		var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -30,7 +29,6 @@ class Tabuleiro {
 		}
 	}
 
-	// Coloca peças iniciais
 	inicializarPecas() {
 		$('.square-board').each((_, square) => {
 			const sq = $(square).attr('id');
@@ -57,7 +55,6 @@ class Movimento {
 		let movimentos = [];
 
 		if (pieceClass.includes('pawn-white')) {
-			// Peão branco
 			let destino1 = coluna + (linha + 1);
 			if ($('#' + destino1 + ' .piece').length === 0) {
 				movimentos.push(destino1);
@@ -68,12 +65,10 @@ class Movimento {
 					}
 				}
 			}
-			// Capturas
 			movimentos.push(...this.movimentosCaptura(coluna, linha, idxCol, 1, 'black'));
 		}
 
 		if (pieceClass.includes('pawn-black')) {
-			// Peão preto
 			let destino1 = coluna + (linha - 1);
 			if ($('#' + destino1 + ' .piece').length === 0) {
 				movimentos.push(destino1);
@@ -84,7 +79,6 @@ class Movimento {
 					}
 				}
 			}
-			// Capturas
 			movimentos.push(...this.movimentosCaptura(coluna, linha, idxCol, -1, 'white'));
 		}
 
@@ -93,7 +87,6 @@ class Movimento {
 
 	movimentosCaptura(coluna, linha, idxCol, direcao, corInimiga) {
 		let movimentos = [];
-		// esquerda
 		if (idxCol > 0) {
 			let destino = this.colunas[idxCol - 1] + (linha + direcao);
 			if ($('#' + destino + ' .piece').length > 0 &&
@@ -101,7 +94,6 @@ class Movimento {
 				movimentos.push(destino);
 			}
 		}
-		// direita
 		if (idxCol < 7) {
 			let destino = this.colunas[idxCol + 1] + (linha + direcao);
 			if ($('#' + destino + ' .piece').length > 0 &&
@@ -136,7 +128,7 @@ class Movimento {
 				} else {
 					let classePecaDestino = $pecaDestino.attr('class');
 					if (!classePecaDestino.includes(corPeca)) {
-						movimentos.push(destinoId); // captura
+						movimentos.push(destinoId);
 					}
 					break;
 				}
@@ -146,19 +138,129 @@ class Movimento {
 		return movimentos;
 	}
 
+	// ======= TORRE =======
+	movimentosTorre(pieceClass, coluna, linha, idxCol) {
+		let movimentos = [];
+		let corPeca = pieceClass.includes('white') ? 'white' : 'black';
+
+		const direcoes = [
+			[1, 0], [-1, 0], [0, 1], [0, -1]
+		];
+
+		for (const [colDelta, rowDelta] of direcoes) {
+			for (let step = 1; step <= 7; step++) {
+				let newIdxCol = idxCol + colDelta * step;
+				let newLinha = linha + rowDelta * step;
+
+				if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) break;
+
+				let destinoId = this.colunas[newIdxCol] + newLinha;
+				let $pecaDestino = $('#' + destinoId + ' .piece');
+
+				if ($pecaDestino.length === 0) {
+					movimentos.push(destinoId);
+				} else {
+					let classePecaDestino = $pecaDestino.attr('class');
+					if (!classePecaDestino.includes(corPeca)) {
+						movimentos.push(destinoId);
+					}
+					break;
+				}
+			}
+		}
+
+		return movimentos;
+	}
+
+	// ======= CAVALO =======
+	movimentosCavalo(pieceClass, coluna, linha, idxCol) {
+		let movimentos = [];
+		let corPeca = pieceClass.includes('white') ? 'white' : 'black';
+
+		const offsets = [
+			[1, 2], [2, 1], [-1, 2], [-2, 1],
+			[1, -2], [2, -1], [-1, -2], [-2, -1]
+		];
+
+		for (const [colDelta, rowDelta] of offsets) {
+			let newIdxCol = idxCol + colDelta;
+			let newLinha = linha + rowDelta;
+
+			if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
+
+			let destinoId = this.colunas[newIdxCol] + newLinha;
+			let $pecaDestino = $('#' + destinoId + ' .piece');
+
+			if ($pecaDestino.length === 0 || !$pecaDestino.attr('class').includes(corPeca)) {
+				movimentos.push(destinoId);
+			}
+		}
+
+		return movimentos;
+	}
+
+	// ======= REI =======
+	movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
+		let movimentos = [];
+		let corPeca = pieceClass.includes('white') ? 'white' : 'black';
+
+		const offsets = [
+			[1, 0], [-1, 0], [0, 1], [0, -1],
+			[1, 1], [1, -1], [-1, 1], [-1, -1]
+		];
+
+		for (const [colDelta, rowDelta] of offsets) {
+			let newIdxCol = idxCol + colDelta;
+			let newLinha = linha + rowDelta;
+			if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
+			let destinoId = this.colunas[newIdxCol] + newLinha;
+			let $pecaDestino = $('#' + destinoId + ' .piece');
+			if ($pecaDestino.length === 0 || !$pecaDestino.attr('class').includes(corPeca)) {
+				movimentos.push(destinoId);
+			}
+		}
+
+		// ===== ROQUE =====
+		// if (!jaMoveuRei) {
+		// 	// Pequeno
+		// 	if (!jaMoveuTorres['h'] &&
+		// 		$('#' + this.colunas[idxCol + 1] + linha).children().length === 0 &&
+		// 		$('#' + this.colunas[idxCol + 2] + linha).children().length === 0) {
+		// 		movimentos.push(this.colunas[idxCol + 2] + linha);
+		// 	}
+		// 	// Grande
+		// 	if (!jaMoveuTorres['a'] &&
+		// 		$('#' + this.colunas[idxCol - 1] + linha).children().length === 0 &&
+		// 		$('#' + this.colunas[idxCol - 2] + linha).children().length === 0 &&
+		// 		$('#' + this.colunas[idxCol - 3] + linha).children().length === 0) {
+		// 		movimentos.push(this.colunas[idxCol - 2] + linha);
+		// 	}
+		// }
+
+		return movimentos;
+	}
+
+	// ======= RAINHA =======
+	movimentosRainha(pieceClass, coluna, linha, idxCol) {
+			// Combina movimentos da torre e do bispo
+			let movimentos = [];
+			movimentos.push(...this.movimentosTorre(pieceClass, coluna, linha, idxCol));
+			movimentos.push(...this.movimentosBispo(pieceClass, coluna, linha, idxCol));
+			return movimentos;
+	}
+
 	// ======= MÉTODO PRINCIPAL =======
-	movimentosPossiveis(pieceClass, squareId) {
+	movimentosPossiveis(pieceClass, squareId, jaMoveuRei = false, jaMoveuTorres = {a:false,h:false}) {
 		let coluna = squareId[0];
 		let linha = parseInt(squareId[1]);
 		let idxCol = this.colunas.indexOf(coluna);
 
-		if (pieceClass.includes('pawn')) {
-			return this.movimentosPeao(pieceClass, coluna, linha, idxCol);
-		}
-		if (pieceClass.includes('bishop')) {
-			return this.movimentosBispo(pieceClass, coluna, linha, idxCol);
-		}
-
+		if (pieceClass.includes('pawn')) return this.movimentosPeao(pieceClass, coluna, linha, idxCol);
+		if (pieceClass.includes('bishop')) return this.movimentosBispo(pieceClass, coluna, linha, idxCol);
+		if (pieceClass.includes('rook')) return this.movimentosTorre(pieceClass, coluna, linha, idxCol);
+		if (pieceClass.includes('knight')) return this.movimentosCavalo(pieceClass, coluna, linha, idxCol);
+		if (pieceClass.includes('king')) return this.movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres);
+		if (pieceClass.includes('queen')) return this.movimentosRainha(pieceClass, coluna, linha, idxCol);
 
 		return [];
 	}
@@ -173,6 +275,12 @@ class Jogo {
 		this.clicou = 0;
 		this.pecaEscolhida = null;
 		this.ultimaCasa = '';
+
+		// Flags de movimento para Roque
+		this.whiteKingMoved = false;
+		this.blackKingMoved = false;
+		this.whiteRooksMoved = {a:false,h:false};
+		this.blackRooksMoved = {a:false,h:false};
 	}
 
 	iniciar() {
@@ -183,55 +291,103 @@ class Jogo {
 	registrarEventos() {
 		const self = this;
 
-		// clicou numa peça
+		// clicar em peça
 		$('body').on('click', '.piece', function () {
 			let classe = $(this).attr('class');
 			let casaId = $(this).parent().attr('id');
+
+			if (!classe.includes(self.vezDo)) {
+				// captura? Se não tiver movimento permitido para captura, alert
+				if (!$(this).parent().hasClass('possible')) {
+					alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
+					return;
+				}
+			}
 
 			if (classe.includes(self.vezDo)) {
 				self.clicou = 1;
 				self.ultimaCasa = casaId;
 				self.pecaEscolhida = $(this);
 				$('.square-board').removeClass('possible');
-				if (!classe.includes(self.vezDo)) {
-						alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
-						return;
-					}
-				let moves = self.movimento.movimentosPossiveis(classe, casaId);
+
+				let jaMoveuRei = (self.vezDo === 'white') ? self.whiteKingMoved : self.blackKingMoved;
+				let jaMoveuTorres = (self.vezDo === 'white') ? self.whiteRooksMoved : self.blackRooksMoved;
+
+				let moves = self.movimento.movimentosPossiveis(classe, casaId, jaMoveuRei, jaMoveuTorres);
 				moves.forEach(m => $('#' + m).addClass('possible'));
 			}
-
-
-			if (!classe.includes(self.vezDo)) {
-				alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
-				return;
-			}
-
 		});
 
-		// clicou em um quadrado
+		// clicar em quadrado
 		$('body').on('click', '.square-board', function () {
 			if (self.clicou === 1) {
 				let idCasa = $(this).attr('id');
-
 				if (idCasa !== self.ultimaCasa && $(this).hasClass('possible')) {
-					// se tiver peça inimiga -> captura
 					let pecaCapturada = $(this).find('.piece');
+					let moveRei = self.pecaEscolhida.hasClass('king');
+
+					// Captura
 					if (pecaCapturada.length > 0) {
-						// manda pra área das capturadas
 						$('.capturadas').append(pecaCapturada);
 					}
 
-					// move a peça
+					// Move Rei e trata Roque
+					if (moveRei) {
+						let origemCol = self.ultimaCasa[0];
+						let destinoCol = idCasa[0];
+						let linha = parseInt(idCasa[1]);
+						let torreOrigem, torreDestino;
+
+						// Roque pequeno
+						if (origemCol === 'e' && destinoCol === 'g') {
+							torreOrigem = 'h' + linha;
+							torreDestino = 'f' + linha;
+						}
+
+						// Roque grande
+						if (origemCol === 'e' && destinoCol === 'c') {
+							torreOrigem = 'a' + linha;
+							torreDestino = 'd' + linha;
+						}
+
+						if (torreOrigem && torreDestino) {
+							let $torre = $('#' + torreOrigem).find('.piece');
+							$('#' + torreDestino).html($torre);
+							$('#' + torreOrigem).empty();
+
+							if (self.vezDo === 'white') self.whiteRooksMoved[torreOrigem[0]] = true;
+							else self.blackRooksMoved[torreOrigem[0]] = true;
+						}
+
+						if (self.vezDo === 'white') self.whiteKingMoved = true;
+						else self.blackKingMoved = true;
+					}
+
+					// Move peça
 					$(this).html(self.pecaEscolhida);
 					$('#' + self.ultimaCasa).empty();
 					$('.square-board').removeClass('possible');
 
-					// troca vez
+					// ===== Promoção de Peão =====
+					if ((self.pecaEscolhida.hasClass('pawn-white') && parseInt(idCasa[1]) === 8) ||
+						(self.pecaEscolhida.hasClass('pawn-black') && parseInt(idCasa[1]) === 1)) {
+
+						$('#promotionModal').data('square', idCasa); // salva a casa atual
+						$('#promotionModal').data('color', self.pecaEscolhida.hasClass('white') ? 'white' : 'black');
+						$('#promotionModal').show();
+					} else {
+						$(this).html(self.pecaEscolhida); // movimento normal
+					}
+
+					// Marca torre como movida
+					if (self.pecaEscolhida.hasClass('rook')) {
+						if (self.vezDo === 'white') self.whiteRooksMoved[self.ultimaCasa[0]] = true;
+						else self.blackRooksMoved[self.ultimaCasa[0]] = true;
+					}
+
+					// Troca vez
 					self.vezDo = (self.vezDo === 'white') ? 'black' : 'white';
 					self.clicou = 0;
-					// ⚠️ Só avisa se tentar selecionar peça adversária
-					
 				}
 			}
 		});
@@ -240,9 +396,17 @@ class Jogo {
 
 // ---------- Inicialização ----------
 $(function () {
-	// cria container pras capturas
 	$('body').append('<div class="capturadas"><h3>Capturadas</h3></div>');
-
 	const jogo = new Jogo();
 	jogo.iniciar();
+});
+
+$('body').on('click', '#promotionModal .promote', function() {
+    let piece = $(this).data('piece'); // queen, rook, bishop, knight
+    let squareId = $('#promotionModal').data('square');
+    let color = $('#promotionModal').data('color');
+
+    $('#' + squareId).html(`<div class="piece ${piece}-${color}"></div>`);
+
+    $('#promotionModal').hide();
 });
