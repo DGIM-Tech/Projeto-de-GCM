@@ -1,58 +1,148 @@
-*{margin:0; padding:0;}
+/* Reset básico: Mantenha isso */
+*{margin:0; padding:0; box-sizing: border-box;}
 body{background:#eee;}
-/*
-	.dark{background:#4B7399;}
-	.light{background:#EAE9D2;}
 
-	.dark{background:#5FBCD3;}
-	.light{background:#AFDDE9;}
+/* ------------------------------------------- */
+/* 1. LAYOUT PRINCIPAL: ALINHAR TABULEIRO E STATS (CORRIGIDO) */
+/* ------------------------------------------- */
 
-	.dark{background:#B18753;}
-	.light{background:#FFFFE8;}
-
-	.dark{background:#86A665;}
-	.light{background:#FFFFDD;}
-*/
 .box{
-	margin:50px auto;
-	width:842px;
-}
-.box .board{
-	float:left;
-	width:512px;
-	height:512px;
+	/* CORREÇÃO CRÍTICA: Usa Flexbox para o layout principal (lado a lado) */
+	display: flex;
+	justify-content: center; /* Centraliza o contêiner na página */
+	align-items: flex-start; /* Alinha o tabuleiro e a barra lateral pelo topo */
+	gap: 30px; /* Espaço entre o tabuleiro e a barra lateral */
+	margin: 50px auto;
+	width: 842px; 
 }
 
-.square-board.highlight {
-  outline: 3px solid yellow; /* ou qualquer cor que queira */
-  box-sizing: border-box;
+/* ------------------------------------------- */
+/* 2. LAYOUT DO TABULEIRO (CORRIGIDO PARA 8x8 GRID) */
+/* ------------------------------------------- */
+
+.box .board{
+	/* CORREÇÃO CRÍTICA: Usa Grid para forçar o layout 8x8 perfeito */
+	display: grid;
+	grid-template-columns: repeat(8, 64px); 
+	grid-template-rows: repeat(8, 64px); 
+    
+	/* Removido: float:left */
+	width: 512px; 
+	height: 512px;
 }
 
 .board .square-board{
-	float:left;
+    /* Removido o float:left que estava causando a quebra do layout */
 	width:64px;
 	height:64px;
+    box-sizing: border-box; /* Garante que outline e padding não aumentem o tamanho */
+}
+
+.square-board.highlight {
+  outline: 3px solid yellow;
+  box-sizing: border-box;
 }
 
 .square-board.possible {
-    outline: 2px solid #5FBCD3; /* ou qualquer cor que queira */
+    outline: 2px solid #5FBCD3;
     box-sizing: border-box;
-    background-color: #AFDDE9; /* fundo semi-transparente */
+    background-color: #AFDDE9;
 }
-
 
 .dark{background:#4B7399;}
 .light{background:white;}
 
+
+/* ------------------------------------------- */
+/* 3. BARRA LATERAL (.stats) E ORGANIZAÇÃO INTERNA */
+/* ------------------------------------------- */
+
 .box .stats{
-	float:right;
+	/* Removido o float:right antigo */
 	width:300px;
-	height:512px;
+	height: 512px; 
 	background:white;
-	overflow:hidden;
 	border-radius:5px;
 	box-shadow:#666 0px 2px 2px;
+	
+    /* Organiza Histórico e Capturadas verticalmente */
+	display: flex;
+	flex-direction: column;
+	overflow: hidden; 
 }
+
+/* O contêiner de Notação deve ocupar a maior parte do espaço */
+.notation{
+    /* Removido: float:left e height fixo */
+	width: 100%;
+	flex-grow: 1; 
+	background:#ebebeb;
+	padding: 10px;
+	/* Corrigido o estilo para se parecer com um módulo */
+	margin-bottom: 0; 
+}
+
+/* O contêiner de Capturadas (injetado pelo JS) */
+.capturadas {
+    padding: 10px;
+    border-top: 1px solid #ccc;
+    background-color: #f8f8f8;
+}
+
+/* Contêiner de rolagem da tabela de histórico (injetado no JS) */
+.notation-content {
+    max-height: 440px; 
+    overflow-y: auto; 
+    padding-right: 5px; 
+    line-height: 1.4;
+}
+
+/* ------------------------------------------- */
+/* 4. ESTILOS DO HISTÓRICO DE JOGADAS (RF05) */
+/* ------------------------------------------- */
+
+.notation table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.notation thead th {
+    background-color: #d8dee3;
+    padding: 5px 0;
+    text-align: center;
+    border-bottom: 1px solid #aaa;
+}
+
+.notation tbody td {
+    padding: 3px 0;
+    border-bottom: 1px dotted #eee;
+    vertical-align: top;
+}
+
+.notation .move-number {
+    width: 15%; 
+    font-weight: bold;
+    color: #007bff;
+    text-align: right;
+    padding-right: 5px;
+}
+
+.brancas-move {
+    width: 40%;
+    padding-left: 5px;
+}
+
+.pretas-move {
+    width: 45%; 
+    /* AJUSTE PARA AFASTAR: Aumenta o preenchimento esquerdo para separar as colunas */
+    padding-left: 20px; 
+    color: #666;
+}
+
+/* ------------------------------------------- */
+/* 5. ESTILOS DE PEÇAS E OUTROS (Seu código original) */
+/* ------------------------------------------- */
 
 .piece{float:left; width:64px; height:64px; background-size:cover !important; cursor:pointer;}
 
@@ -71,15 +161,8 @@ body{background:#eee;}
 .piece.pawn-white{background:url(../images/pawn-white.png);}
 
 .player{
-	float:left;
+	float:left; 
 	width:100%;
 	height:40px;
 	background:linear-gradient(to bottom, #fff, #eee 130%);
-}
-
-.notation{
-	float:left;
-	background:#ebebeb;
-	width:100%;
-	height:432px;
 }
