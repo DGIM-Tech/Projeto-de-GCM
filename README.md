@@ -6,7 +6,7 @@ mas se estende a habilidades cognitivas essenciais que podem ser desenvolvidas d
 ## **:computer:** Descrição
 <p align="justify"> Para a construção deste projeto, utilizamos uma combinação de tecnologias e amplamente conhecidas. O Java foi a linguagem principal escolhida para implementar a complexa lógica do jogo e suas regras no backend. No frontend, a interface do usuário foi estruturada com HTML e estilizada com CSS para um design visual agradável. A camada de interatividade, essencial para a dinâmica do jogo e a manipulação dos elementos visuais, é garantida pelo JavaScript e sua biblioteca jQuery. Esta plataforma nos permite não apenas gerenciar o projeto de forma colaborativa, mas também serve como um portfólio acessível, demonstrando nosso compromisso em aplicar a tecnologia para fins educacionais e de impacto social.</p>
 
-## ⚙️ Gestão de codigo e branching
+## ⚙️ Gestão de código e branching
 <p align="justify"> Todo o processo de desenvolvimento e o código-fonte estão hospedados no GitHub. Atualmente adotamos um fluxo de trabalho com três branches principais para garantir a estabilidade e a organização:
 
 * **`main`**: Contém a última versão de código estável e pronta para produção.
@@ -14,8 +14,7 @@ mas se estende a habilidades cognitivas essenciais que podem ser desenvolvidas d
 * **`teste`**: Uma brach edicada para testes de novas funcionalidaades e correções, garantindo a qualidade antes de migrar para `main`.
 
 ## 📝 Documentação
-   #### 1º unidade
-   ---
+
 📝[Definição do Projeto](https://docs.google.com/document/d/1upM3I_varPTCPzKFSBdW9acO60JDA7ycdH0IAgKeVjY/edit?usp=sharing).<br />
 📝[Lista inicial dos Requisitos](https://docs.google.com/document/d/1wHgc3APKebkgVvhtmkafM33uFKxWKmXZc2e9-D1z1y0/edit?usp=sharing).<br />
 📝[Diagramas de classes e casos de uso](https://docs.google.com/document/d/1mWjICxbt6G5Om2x0gBHEF9W1pZezStDVpiu_HYPTdJE/edit?usp=sharing).<br />
