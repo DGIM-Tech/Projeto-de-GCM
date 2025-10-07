@@ -6,7 +6,7 @@ $(function () {
     // PREPARAÇÃO DO LAYOUT LATERAL
     
     // Injeta o cabeçalho e o contêiner de peças capturadas (no HTML, div.stats)
-    $('.stats').append('<div class="capturadas"><h3>Peças Capturadas</h3><div class="capturadas-list"></div></div>');
+    $('.stats .capturadas').append('<div class="capturadas"><h3>Peças Capturadas</h3><div class="capturadas-list"></div></div>');
     
     // 1. Inicializa o Jogo
     const jogo = new Jogo();

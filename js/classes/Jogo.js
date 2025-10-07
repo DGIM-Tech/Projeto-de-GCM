@@ -24,7 +24,11 @@ export class Jogo {
     iniciar() {
         this.tabuleiro.inicar();
         this.registrarEventos();
+
+        // Inicializa o histórico de jogadas vazio, mas mostra o cabeçalho
+        $('.stats .notation').html('<h3>Histórico de Jogadas</h3><div class="notation-content"><table><thead><tr><th>#</th><th>Brancas</th><th>Pretas</th></tr></thead><tbody></tbody></table></div>');
     }
+
     
     // NOVO: Gera a notação no formato descritivo: [Tipo de peça] [Origem]-[Destino]
     gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
@@ -99,6 +103,7 @@ export class Jogo {
         
         // ATUALIZA: Injeta o cabeçalho e a tabela no elemento .notation
         $('.stats .notation').html('<h3>Histórico de Jogadas</h3>' + html);
+         
     }
 
     registrarEventos() {
