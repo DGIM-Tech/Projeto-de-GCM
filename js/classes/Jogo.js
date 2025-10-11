@@ -1,6 +1,8 @@
-
 import { Tabuleiro } from './Tabuleiro.js';
 import { Movimento } from './Movimento.js';
+import { Xeque } from './Xeque.js'; // Importa o detector de xeque
+import { XequeMate } from './XequeMate.js';
+import { Empate } from './Empate.js';
 
 export class Jogo {
     constructor() {
@@ -11,7 +13,7 @@ export class Jogo {
         this.pecaEscolhida = null;
         this.ultimaCasa = '';
 
-        // RF05: Histórico de Jogadas
+        // Histórico de Jogadas
         this.historicoDeJogadas = []; 
 
         // Flags de movimento para Roque
@@ -25,14 +27,11 @@ export class Jogo {
         this.tabuleiro.inicar();
         this.registrarEventos();
 
-        // Inicializa o histórico de jogadas vazio, mas mostra o cabeçalho
+        // Interface do histórico
         $('.stats .notation').html('<h3>Histórico de Jogadas</h3><div class="notation-content"><table><thead><tr><th>#</th><th>Brancas</th><th>Pretas</th></tr></thead><tbody></tbody></table></div>');
     }
 
-    
-    // NOVO: Gera a notação no formato descritivo: [Tipo de peça] [Origem]-[Destino]
     gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
-        
         const classePeca = peca.attr('class').split(' ')[1];
         const tipoPeca = classePeca.split('-')[0];
         const isCaptura = pecaCapturada.length > 0;
@@ -53,9 +52,7 @@ export class Jogo {
 
         notacao += nomePeca + ' ' + origem + '-' + destino;
 
-        if (isCaptura) {
-            notacao += ' (Captura)';
-        }
+        if (isCaptura) notacao += ' (Captura)';
 
         if (promocaoPara) {
             const nomePromocao = promocaoPara.charAt(0).toUpperCase() + promocaoPara.slice(1);
@@ -64,19 +61,15 @@ export class Jogo {
         
         return notacao;
     }
-    
-    // NOVO: Registra a jogada no array e atualiza a interface (RF05)
+
     registrarJogada(notacao) {
         this.historicoDeJogadas.push(notacao);
         this.atualizarInterfaceHistorico();
     }
 
-    // NOVO: Renderiza o histórico em formato de tabela (linhas separadas por jogada)
     atualizarInterfaceHistorico() {
-        // Remove o wrapper anterior para evitar duplicação antes de injetar a tabela
         $('.stats .notation .notation-content').remove();
 
-        // Inicia a estrutura da tabela
         let html = '<div class="notation-content"><table><thead><tr><th>#</th><th>Brancas</th><th>Pretas</th></tr></thead><tbody>';
         let moveIndex = 0;
 
@@ -86,33 +79,32 @@ export class Jogo {
             const notacaoPretas = this.historicoDeJogadas[i + 1] || ''; 
             
             html += `<tr>`;
-            
             html += `<td class="move-number">${moveIndex}.</td>`;
             html += `<td class="brancas-move">${notacaoBrancas}</td>`;
-            
-            if (notacaoPretas) {
-                html += `<td class="pretas-move">${notacaoPretas}</td>`;
-            } else {
-                html += `<td class="pretas-move">...</td>`; 
-            }
-            
+            html += `<td class="pretas-move">${notacaoPretas || '...'}</td>`; 
             html += `</tr>`;
         }
         
         html += '</tbody></table></div>';
-        
-        // ATUALIZA: Injeta o cabeçalho e a tabela no elemento .notation
         $('.stats .notation').html('<h3>Histórico de Jogadas</h3>' + html);
-         
     }
 
     registrarEventos() {
         const self = this;
 
-        // clicar em peça
+        // === CLICAR NA PEÇA ===
         $('body').on('click', '.piece', function () {
             let classe = $(this).attr('class');
             let casaId = $(this).parent().attr('id');
+
+            // ⚠️ Verifica se está em xeque
+            const emXeque = Xeque.estaEmXeque(self.vezDo);
+
+            // Se está em xeque e a peça não é o rei da vez, bloqueia
+            if (emXeque && (!classe.includes('king') || !classe.includes(self.vezDo))) {
+                alert("⚠️ Você está em xeque! Somente o rei pode se mover.");
+                return;
+            }
 
             if (classe.includes(self.vezDo)) {
                 self.clicou = 1;
@@ -128,11 +120,11 @@ export class Jogo {
             } else if (self.clicou === 1 && $(this).parent().hasClass('possible')) {
                 $(this).parent().trigger('click');
             } else {
-                 alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
+                alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
             }
         });
 
-        // clicar em quadrado
+        // === CLICAR NO QUADRADO ===
         $('body').on('click', '.square-board', function () {
             if (self.clicou === 1) {
                 let idCasa = $(this).attr('id');
@@ -181,7 +173,7 @@ export class Jogo {
                     $('#' + self.ultimaCasa).empty();
                     $('.square-board').removeClass('possible');
 
-                    // ===== Promoção de Peão =====
+                    // ===== PROMOÇÃO =====
                     if ((self.pecaEscolhida.hasClass('pawn-white') && parseInt(idCasa[1]) === 8) ||
                         (self.pecaEscolhida.hasClass('pawn-black') && parseInt(idCasa[1]) === 1)) {
                         
@@ -191,7 +183,7 @@ export class Jogo {
                         $('#promotionModal').show();
                         
                     } else {
-                        // Movimento Normal/Roque: Gera notação, registra e troca a vez
+                        // Notação e troca de vez
                         notacaoFinal = self.gerarNotacaoAlgébrica(
                             self.ultimaCasa, idCasa, self.pecaEscolhida, pecaCapturada,
                             isRoquePequeno, isRoqueGrande, promocaoPara
@@ -201,8 +193,32 @@ export class Jogo {
                         // Troca vez
                         self.vezDo = (self.vezDo === 'white') ? 'black' : 'white';
                         self.clicou = 0;
+
+                        // Verifica se o novo jogador está em xeque
+                        if (Xeque.estaEmXeque(self.vezDo)) {
+                            const corTexto = (self.vezDo === 'white') ? 'Brancas' : 'Pretas';
+                            alert(`♟️ ${corTexto} estão em XEQUE!`);
+                        }
+
                     }
-                    
+
+                        // Verifica se está em xeque
+                        if (Xeque.estaEmXeque(self.vezDo)) {
+                        const corTexto = self.vezDo === 'white' ? 'Brancas' : 'Pretas';
+                        alert(`♟️ ${corTexto} estão em XEQUE!`);
+
+                        // Verifica se está em xeque-mate
+                        if (XequeMate.estaEmXequeMate(self.vezDo)) {
+                            alert(`🏁 XEQUE-MATE! ${(self.vezDo === 'white') ? 'Pretas' : 'Brancas'} vencem o jogo!`);
+                            $('body').off('click');
+                        }
+                    }
+
+                    // Verifica se está em empate
+                    if (Empate.verificarEmpate(self.vezDo, self.movimento)) {
+                        $('body').off('click'); // encerra o jogo
+                    }
+
                     // Marca torre como movida
                     if (self.pecaEscolhida.hasClass('rook') && !isRoquePequeno && !isRoqueGrande) {
                         if (self.vezDo === 'white') self.whiteRooksMoved[self.ultimaCasa[0]] = true;
