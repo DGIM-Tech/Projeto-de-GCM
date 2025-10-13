@@ -1,3 +1,5 @@
+
+import { Xeque } from './Xeque.js';
 export class Empate {
     /**
      * Verifica se o jogo entrou em empate
@@ -7,7 +9,7 @@ export class Empate {
      */
     static verificarEmpate(vezDo, movimento) {
         const possiveis = Empate.todosMovimentosPossiveis(vezDo, movimento);
-        const emXeque = require('./Xeque.js').Xeque.estaEmXeque(vezDo);
+        const emXeque = Xeque.estaEmXeque(vezDo);
 
         // Empate por afogamento
         if (possiveis.length === 0 && !emXeque) {
