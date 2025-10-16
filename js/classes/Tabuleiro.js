@@ -14,6 +14,22 @@ export class Tabuleiro {
             e1: 'king-white', f1: 'bishop-white', g1: 'knight-white', h1: 'rook-white'
         };
     }
+     /**
+     * Verifica se uma posição (ex: 'e4') é válida no tabuleiro.
+     * @param {string} posicao 
+     * @returns {boolean}
+     */
+    posicaoValida(posicao) {
+        if (typeof posicao !== 'string' || posicao.length !== 2) return false;
+        
+        const coluna = posicao[0];
+        const linha = parseInt(posicao[1], 10);
+        
+        const colunasValidas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+        return colunasValidas.includes(coluna) && linha >= 1 && linha <= 8;
+    }
+
 
     printBoard() {
         var light = 1;
@@ -42,5 +58,16 @@ export class Tabuleiro {
         this.printBoard();
         this.inicializarPecas();
     }
+     getTabuleiroAtual() {
+        const tabuleiroAtual = {};
+        $('.piece').each((_, peca) => {
+            const casa = $(peca).parent().attr('id');
+            tabuleiroAtual[casa] = {
+                tipo: $(peca).attr('class').split(' ')[1].split('-')[0],  // rook, king, etc
+                cor: $(peca).attr('class').split(' ')[1].split('-')[1],   // white ou black
+                posicaoValida: true
+            };
+        });
+        return tabuleiroAtual;
+    }
 }
-

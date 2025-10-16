@@ -1,38 +1,63 @@
-import { Movimento } from './Movimento.js';
+// // Xeque.js
+// export class Xeque {
+//     // Verifica se o REI da cor alvo está sendo atacado por alguma peça inimiga
+//     static estaEmXeque(tabuleiro, corDoRei, movimento) {
+//         const posicaoRei = Xeque._encontrarRei(tabuleiro, corDoRei);
+//         if (!posicaoRei) return false;
 
-/**
- * Classe responsável por verificar se o rei de uma cor está em xeque.
- */
+//         const corOponente = corDoRei === 'white' ? 'black' : 'white';
+
+//         // Percorrer todas as peças do adversário e ver se alguma pode capturar o rei
+//         for (let linha = 1; linha <= 8; linha++) {
+//             for (let col of ['a','b','c','d','e','f','g','h']) {
+//                 const cellId = col + linha;
+//                 const peca = $('#' + cellId).find('.piece');
+//                 if (peca.length > 0 && peca.attr('class').includes(corOponente)) {
+//                     const moves = movimento.movimentosPossiveis(peca.attr('class'), cellId, false, {});
+//                     if (moves.includes(posicaoRei)) {
+//                         return true;
+//                     }
+//                 }
+//             }
+//         }
+
+//         return false;
+//     }
+
+//     static _encontrarRei(tabuleiro, cor) {
+//         for (let linha = 1; linha <= 8; linha++) {
+//             for (let col of ['a','b','c','d','e','f','g','h']) {
+//                 const cellId = col + linha;
+//                 const peca = $('#' + cellId).find('.piece');
+//                 if (peca.length > 0 && peca.hasClass(cor) && peca.hasClass('king')) {
+//                     return cellId;
+//                 }
+//             }
+//         }
+//         return null;
+//     }
+// }
+
 export class Xeque {
     /**
      * Verifica se o rei da cor informada está em xeque.
-     * @param {string} cor - 'white' ou 'black'
+     * Esta versão é mais eficiente e reutiliza a lógica de ataque.
+     * @param {string} cor - A cor do rei a ser verificado ('white' ou 'black').
+     * @param {Movimento} movimento - A instância principal de Movimento do jogo.
      * @returns {boolean}
      */
-    static estaEmXeque(cor) {
-        const movimento = new Movimento();
+    static estaEmXeque(cor, movimento) {
         const corInimiga = (cor === 'white') ? 'black' : 'white';
 
-        // Encontra o rei
+        // Encontra a posição do rei
         const rei = document.querySelector(`.piece.king-${cor}`);
-        if (!rei) return false;
+        if (!rei) {
+            console.error('Rei da cor ${cor} não encontrado!');
+            return false;
+        }
         const posicaoRei = rei.parentElement.id;
 
-        // Percorre todas as peças inimigas
-        const pecas = document.querySelectorAll('.piece');
-        for (const peca of pecas) {
-            const classes = peca.className;
-            if (!classes.includes(corInimiga)) continue;
-
-            const casaAtual = peca.parentElement.id;
-            const tipo = classes.split(' ')[1]; // ex: rook-black
-
-            const moves = movimento.movimentosPossiveis(tipo, casaAtual);
-            if (moves.includes(posicaoRei)) {
-                return true; // Xeque detectado!
-            }
-        }
-
-        return false;
+        // Usa o método ajudante para verificar se a casa do rei está sob ataque
+        return movimento.isSquareAttacked(posicaoRei, corInimiga);
     }
 }
