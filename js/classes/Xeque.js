@@ -41,23 +41,36 @@
 export class Xeque {
     /**
      * Verifica se o rei da cor informada está em xeque.
-     * Esta versão é mais eficiente e reutiliza a lógica de ataque.
-     * @param {string} cor - A cor do rei a ser verificado ('white' ou 'black').
-     * @param {Movimento} movimento - A instância principal de Movimento do jogo.
+     * Destaca o rei com fundo vermelho se estiver em xeque.
+     * @param {string} cor - A cor do rei ('white' ou 'black').
+     * @param {Movimento} movimento - Instância principal de Movimento.
      * @returns {boolean}
      */
     static estaEmXeque(cor, movimento) {
         const corInimiga = (cor === 'white') ? 'black' : 'white';
-
-        // Encontra a posição do rei
         const rei = document.querySelector(`.piece.king-${cor}`);
+
         if (!rei) {
-            console.error('Rei da cor ${cor} não encontrado!');
+            console.error(`Rei da cor ${cor} não encontrado!`);
             return false;
         }
-        const posicaoRei = rei.parentElement.id;
 
-        // Usa o método ajudante para verificar se a casa do rei está sob ataque
-        return movimento.isSquareAttacked(posicaoRei, corInimiga);
+        const casaRei = rei.parentElement;
+        const posicaoRei = casaRei.id;
+
+        // Verifica se o rei está sob ataque
+        const emXeque = movimento.isSquareAttacked(posicaoRei, corInimiga);
+
+        // Remove qualquer destaque anterior
+        document.querySelectorAll('.xeque-highlight').forEach(el => {
+            el.classList.remove('xeque-highlight');
+        });
+
+        // Se estiver em xeque, adiciona destaque vermelho
+        if (emXeque) {
+            casaRei.classList.add('xeque-highlight');
+        }
+
+        return emXeque;
     }
 }

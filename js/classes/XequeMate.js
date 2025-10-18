@@ -1,39 +1,49 @@
-// XequeMate.js
 import { Xeque } from './Xeque.js';
 
 export class XequeMate {
-    static estaEmXequeMate(tabuleiro, corDoRei, movimento) {
-        if (!Xeque.estaEmXeque(tabuleiro, corDoRei, movimento)) {
+    static estaEmXequeMate(cor, movimento) {
+        if (!Xeque.estaEmXeque(cor, movimento)) {
             return false;
         }
 
-        // Tentar mover todas as peças do rei e ver se alguma salva o rei
+        const colunas = ['a','b','c','d','e','f','g','h'];
+
         for (let linha = 1; linha <= 8; linha++) {
-            for (let col of ['a','b','c','d','e','f','g','h']) {
-                const cellId = col + linha;
-                const peca = $('#' + cellId).find('.piece');
-                if (peca.length > 0 && peca.attr('class').includes(corDoRei)) {
-                    const moves = movimento.movimentosPossiveis(peca.attr('class'), cellId, false, {});
-                    for (let destino of moves) {
-                        // Simular movimento
-                        const pecaCapturada = $('#' + destino).html();
-                        const origHTML = $('#' + cellId).html();
+            for (let col of colunas) {
+                const id = col + linha;
+                const casa = document.getElementById(id);
+                if (!casa) continue;
 
-                        $('#' + destino).html(origHTML);
-                        $('#' + cellId).empty();
+                const peca = casa.querySelector('.piece');
+                if (!peca || !peca.classList.contains(cor)) continue;
 
-                        const aindaEmXeque = Xeque.estaEmXeque(tabuleiro, corDoRei, movimento);
+                const moves = movimento.movimentosPossiveis(peca.className, id, false, {});
+                for (const destino of moves) {
+                    const casaDestino = document.getElementById(destino);
+                    if (!casaDestino) continue;
 
-                        // Desfazer movimento
-                        $('#' + cellId).html(origHTML);
-                        $('#' + destino).html(pecaCapturada);
+                    const origemHTML = casa.innerHTML;
+                    const destinoHTML = casaDestino.innerHTML;
 
-                        if (!aindaEmXeque) {
-                            return false; // Há como escapar → não é xeque-mate
-                        }
-                    }
+                    casaDestino.innerHTML = origemHTML;
+                    casa.innerHTML = '';
+
+                    const aindaEmXeque = Xeque.estaEmXeque(cor, movimento);
+
+                    casa.innerHTML = origemHTML;
+                    casaDestino.innerHTML = destinoHTML;
+
+                    if (!aindaEmXeque) return false;
                 }
             }
+        }
+
+        // Efeito visual do xeque-mate
+        const rei = document.querySelector(`.piece.king-${cor}`);
+        if (rei) {
+            const casaRei = rei.parentElement;
+            casaRei.classList.remove('xeque-highlight');
+            casaRei.classList.add('xeque-mate-highlight');
         }
 
         return true;

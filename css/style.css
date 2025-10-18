@@ -74,6 +74,51 @@ body{background:#eee;}
 	height:64px;
 	box-sizing: border-box;
 }
+
+/* Xeque: vermelho translúcido */
+.xeque-highlight {
+    background-color: rgba(255, 0, 0, 0.5) !important;
+    box-shadow: 0 0 12px red;
+    transition: all 0.3s ease;
+}
+
+/* Xeque-mate: vermelho forte pulsando */
+.xeque-mate-highlight {
+    background-color: rgba(255, 0, 0, 0.8) !important;
+    box-shadow: 0 0 25px 5px red;
+    animation: pulse-mate 1s infinite alternate;
+}
+
+.btn-desistir {
+    padding: 10px 16px;
+    font-size: 14px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.btn-desistir.white {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.btn-desistir.black {
+    background-color: #333;
+    color: #fff;
+}
+
+.btn-desistir:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+@keyframes pulse-mate {
+    0% { box-shadow: 0 0 20px 4px red; }
+    100% { box-shadow: 0 0 40px 10px darkred; }
+}
+
 .square-board.highlight { outline: 3px solid yellow; }
 .square-board.possible {
 	outline: 2px solid #5FBCD3;

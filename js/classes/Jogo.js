@@ -101,6 +101,66 @@ export class Jogo {
         moves.forEach(m => $('#' + m).addClass('possible'));
     }
 
+    _filtrarMovimentosLegais(peca, movimentos) {
+        const cor = this.vezDo;
+        const casaOrigemEl = peca.parent();
+        const movimentosLegais = [];
+
+        // Desanexa a peça principal do tabuleiro ANTES de começar o loop
+        peca.detach();
+
+        for (const casaDestinoId of movimentos) {
+            const casaDestinoEl = $('#' + casaDestinoId);
+            
+            // Salva e desanexa a peça que seria capturada
+            let pecaCapturada = casaDestinoEl.children('.piece').first();
+            if (pecaCapturada.length > 0) {
+                pecaCapturada.detach();
+            }
+            
+            // 1. SIMULAÇÃO: Coloca a peça na casa de destino
+            casaDestinoEl.append(peca);
+
+            // 2. VERIFICAÇÃO
+            if (!Xeque.estaEmXeque(cor, this.movimento)) {
+                movimentosLegais.push(casaDestinoId);
+            }
+
+            // 3. DESFAZ A SIMULAÇÃO
+            // Remove a peça da casa de destino
+            peca.detach();
+            // Coloca a peça capturada de volta, se ela existia
+            if (pecaCapturada.length > 0) {
+                casaDestinoEl.append(pecaCapturada);
+            }
+        }
+
+        // Coloca a peça principal de volta em sua casa original
+        casaOrigemEl.append(peca);
+
+        return movimentosLegais;
+    }
+   _mostrarMovimentosPossiveis(classe, casaId) {
+        $('.square-board').removeClass('possible');
+
+        const jaMoveuRei = (this.vezDo === 'white') ? this.whiteKingMoved : this.blackKingMoved;
+        const jaMoveuTorres = (this.vezDo === 'white') ? this.whiteRooksMoved : this.blackRooksMoved;
+
+        // 1. Pega todos os movimentos "pseudo-legais" (o que a peça pode fazer em teoria)
+        const movimentosPseudoLegais = this.movimento.movimentosPossiveis(
+            classe, casaId, jaMoveuRei, jaMoveuTorres
+        );
+
+        // 2. Pega o elemento da peça que foi selecionada.
+        const pecaSelecionada = $('#' + casaId).find('.piece');
+
+        // 3. USA O FILTRO! Esta é a linha que faltava.
+        const movimentosFinais = this._filtrarMovimentosLegais(pecaSelecionada, movimentosPseudoLegais);
+
+        // 4. Mostra apenas os movimentos 100% legais na interface.
+        movimentosFinais.forEach(m => $('#' + m).addClass('possible'));
+    }
+
     _tentarMoverPeca(casaAlvo) {
         if (this.clicou !== 1) return;
         const casaDestinoId = casaAlvo.attr('id');
