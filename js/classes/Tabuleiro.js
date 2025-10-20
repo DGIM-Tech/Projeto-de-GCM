@@ -31,19 +31,20 @@ export class Tabuleiro {
     }
 
 
-    printBoard() {
-        var light = 1;
-        var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-        for (var l = 8; l >= 1; --l) {
-            for (var c = 0; c < columns.length; ++c) {
-                var sq = columns[c] + l;
-                var lightdark = (light == 1) ? 'light' : 'dark';
-                $('.board').append('<div class="square-board ' + lightdark + '" id="' + sq + '"></div>');
-                light ^= 1;
-            }
+  printBoard() {
+    $('.board').empty(); // <-- ESTA É A LINHA QUE CORRIGE O BUG!
+    var light = 1;
+    var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    for (var l = 8; l >= 1; --l) {
+        for (var c = 0; c < columns.length; ++c) {
+            var sq = columns[c] + l;
+            var lightdark = (light == 1) ? 'light' : 'dark';
+            $('.board').append('<div class="square-board ' + lightdark + '" id="' + sq + '"></div>');
             light ^= 1;
         }
+        light ^= 1;
     }
+}
 
     inicializarPecas() {
         $('.square-board').each((_, square) => {

@@ -1,51 +1,54 @@
+// XequeMate.js - VERSÃO FINAL E CORRIGIDA
+
 import { Xeque } from './Xeque.js';
 
 export class XequeMate {
-    static estaEmXequeMate(cor, movimento) {
-        if (!Xeque.estaEmXeque(cor, movimento)) {
-            return false;
-        }
+    /**
+     * Verifica se um jogador, que já está em xeque, não tem movimentos legais para escapar.
+     */
+    static estaEmXequeMate(cor, jogo) {
+        const pecasDoJogador = document.querySelectorAll(`.piece.${cor}`);
 
-        const colunas = ['a','b','c','d','e','f','g','h'];
+        // Testa TODAS as peças para ver se ALGUMA tem um movimento que salva o rei
+        for (const peca of pecasDoJogador) {
+            const casaOrigemEl = peca.parentElement;
+            if (!casaOrigemEl) continue;
 
-        for (let linha = 1; linha <= 8; linha++) {
-            for (let col of colunas) {
-                const id = col + linha;
-                const casa = document.getElementById(id);
-                if (!casa) continue;
+            // Pega os movimentos teóricos da peça
+            const movimentosPossiveis = jogo.movimento.movimentosPossiveis(
+                peca.className,
+                casaOrigemEl.id,
+                (cor === 'white') ? jogo.whiteKingMoved : jogo.blackKingMoved,
+                (cor === 'white') ? jogo.whiteRooksMoved : jogo.blackRooksMoved
+            );
 
-                const peca = casa.querySelector('.piece');
-                if (!peca || !peca.classList.contains(cor)) continue;
+            // Simula cada um desses movimentos
+            for (const destinoId of movimentosPossiveis) {
+                const destinoEl = document.getElementById(destinoId);
+                if (!destinoEl) continue;
 
-                const moves = movimento.movimentosPossiveis(peca.className, id, false, {});
-                for (const destino of moves) {
-                    const casaDestino = document.getElementById(destino);
-                    if (!casaDestino) continue;
+                const pecaCapturada = destinoEl.querySelector('.piece');
 
-                    const origemHTML = casa.innerHTML;
-                    const destinoHTML = casaDestino.innerHTML;
+                // --- Simulação ---
+                if (pecaCapturada) destinoEl.removeChild(pecaCapturada);
+                destinoEl.appendChild(peca);
 
-                    casaDestino.innerHTML = origemHTML;
-                    casa.innerHTML = '';
+                // VERIFICAÇÃO SEGURA: O rei ainda está sob ataque?
+                // Usamos o método "puro" para não bagunçar a tela!
+                const ehMovimentoSalvador = !Xeque._estaSendoAtacado(cor, jogo.movimento);
 
-                    const aindaEmXeque = Xeque.estaEmXeque(cor, movimento);
+                // --- Restauração ---
+                casaOrigemEl.appendChild(peca);
+                if (pecaCapturada) destinoEl.appendChild(pecaCapturada);
 
-                    casa.innerHTML = origemHTML;
-                    casaDestino.innerHTML = destinoHTML;
-
-                    if (!aindaEmXeque) return false;
+                // Se encontramos UM movimento que salva, já sabemos que NÃO é mate.
+                if (ehMovimentoSalvador) {
+                    return false; // Encontrou uma fuga!
                 }
             }
         }
 
-        // Efeito visual do xeque-mate
-        const rei = document.querySelector(`.piece.king-${cor}`);
-        if (rei) {
-            const casaRei = rei.parentElement;
-            casaRei.classList.remove('xeque-highlight');
-            casaRei.classList.add('xeque-mate-highlight');
-        }
-
+        // Se o loop terminou e NENHUM movimento salvou o rei, é xeque-mate.
         return true;
     }
 }
