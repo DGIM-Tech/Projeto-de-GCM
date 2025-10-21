@@ -1,34 +1,95 @@
 <!DOCTYPE HTML>
 <html lang="pt-BR">
 <head>
-    <meta charset=UTF-8>
-    <title>Engine Xadrez Randômico</title>
+    <meta charset="UTF-8">
+    <title>Xadrez com IA</title>
     <link href="css/style.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        /* Tela inicial */
+        .tela-inicial {
+            position: fixed; inset: 0; background: #0E7886;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; color: white; text-align: center; z-index: 2000;
+        }
+        .tela-inicial h1 { font-size: 3rem; margin-bottom: 30px; }
+        .tela-inicial button {
+            background: #ffffff; color: #0E7886; border: none;
+            font-size: 1.3rem; font-weight: bold; padding: 15px 40px;
+            border-radius: 8px; margin: 10px; cursor: pointer; transition: 0.3s;
+        }
+        .tela-inicial button:hover { background: #0b5f68; color: white; }
+        
+        .box, .controles {
+            visibility: hidden; opacity: 0; transition: opacity 0.6s ease;
+        }
+        .box.ativo, .controles.ativo { visibility: visible; opacity: 1; }
+        
+        .swal2-html-container { text-align: left; margin: 1em 2em 0.3em !important; }
+        .swal2-html-container h3 { margin-top: 15px; margin-bottom: 8px; }
+        .swal2-html-container label { display: block; margin-bottom: 5px; font-size: 1em; }
+    </style>
 </head>
 
 <body>
-    <div class="box">
-        <div class="board"></div>
-        <div class="stats">
-            <div class="player"></div>
-            <div class="notation"></div>
-            <div class="player"></div>
-        </div>
-        <div style="clear:both;"></div>
+    <div class="tela-inicial" id="telaInicial">
+        <h1>Jogo de Xadrez</h1>
+        <button id="btnAmigo">Jogar contra um amigo</button>
+        <button id="btnComputador">Jogar contra o computador</button>
     </div>
 
-    <!-- Modal de promoção de peão -->
-    <div id="promotionModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-        background:#fff; padding:20px; border:2px solid #000; z-index:1000; text-align:center;">
+    <div class="box">
+        <div class="stats">
+            <div class="capturadas"></div>
+        </div>
+        <div class="board-wrapper">
+            <div class="letters-top"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+            <div class="board-row">
+                <div class="numbers-left"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+                <div class="board"></div>
+                <div class="numbers-right"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+            </div>
+            <div class="letters-bottom"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+        </div>
+        <div class="stats">
+            <div class="notation"></div>
+        </div>
+    </div>
+
+    <div class="controles">
+        <button id="btnDesistir" class="btn-controle vermelho">Desistir</button>
+        <button id="btnEmpate" class="btn-controle cinza">Pedir Empate</button>
+        <button id="btnReiniciar" class="btn-controle azul">Reiniciar</button>
+    </div>
+
+    <div id="promotionModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border:2px solid #000; z-index:1000; text-align:center;">
         <h3>Escolha a peça para promoção</h3>
         <button class="promote" data-piece="queen">Rainha</button>
         <button class="promote" data-piece="rook">Torre</button>
         <button class="promote" data-piece="bishop">Bispo</button>
         <button class="promote" data-piece="knight">Cavalo</button>
     </div>
+    
+    <div id="modalDesistir" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:3000;">
+        <div style="background:white; padding:30px; text-align:center; border-radius:8px;">
+            <h2>Partida Abandonada</h2>
+            <button onclick="voltarParaInicio()" style="padding:10px 30px; background:#0E7886; color:white; border:none; border-radius:5px;">Voltar ao início</button>
+        </div>
+    </div>
+    
+    <div id="modalEmpate" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:3000;">
+        <div style="background:white; padding:30px; text-align:center; border-radius:8px;">
+            <h2>Partida Empatada</h2>
+            <button onclick="voltarParaInicio()" style="padding:10px 30px; background:#0E7886; color:white; border:none; border-radius:5px;">Voltar ao início</button>
+        </div>
+    </div>
 
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-     <script type="module" src="js/index.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    
+    <!-- O único script necessário é o módulo. Toda a lógica agora está nele. -->
+    <script type="module" src="js/index.js"></script>
+    
+    </body>
 </html>

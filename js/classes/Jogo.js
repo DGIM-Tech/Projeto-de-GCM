@@ -1,210 +1,354 @@
+// js/classes/Jogo.js
 
 import { Tabuleiro } from './Tabuleiro.js';
 import { Movimento } from './Movimento.js';
+import { Xeque } from './Xeque.js';
+import { XequeMate } from './XequeMate.js';
 
 export class Jogo {
-    constructor() {
+    constructor(jogador1, jogador2) {
         this.tabuleiro = new Tabuleiro();
-        this.movimento = new Movimento();
-        this.vezDo = 'white';
+        this.movimento = new Movimento(this.tabuleiro);
         this.clicou = 0;
         this.pecaEscolhida = null;
         this.ultimaCasa = '';
-
-        // RF05: Histórico de Jogadas
-        this.historicoDeJogadas = []; 
-
-        // Flags de movimento para Roque
+        this.historicoDeJogadas = [];
+        this.gameOver = false;
+        this.jogador1 = jogador1;
+        this.jogador2 = jogador2;
+        this.jogadorAtual = this.jogador1;
+        this.vezDo = 'white';
         this.whiteKingMoved = false;
         this.blackKingMoved = false;
-        this.whiteRooksMoved = {a:false,h:false};
-        this.blackRooksMoved = {a:false,h:false};
+        this.whiteRooksMoved = { a1: false, h1: false };
+        this.blackRooksMoved = { a8: false, h8: false };
+        this.enPassantTarget = null; 
     }
 
     iniciar() {
         this.tabuleiro.inicar();
-        this.registrarEventos();
+        this._registrarEventos();
+        this.atualizarInterfaceHistorico();
+        this.proximoTurno();
     }
-    
-    // NOVO: Gera a notação no formato descritivo: [Tipo de peça] [Origem]-[Destino]
-    gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
-        
-        const classePeca = peca.attr('class').split(' ')[1];
-        const tipoPeca = classePeca.split('-')[0];
-        const isCaptura = pecaCapturada.length > 0;
-        
-        let notacao = '';
-        
-        const nomePeca = {
-            'pawn': 'Peão',
-            'knight': 'Cavalo',
-            'bishop': 'Bispo',
-            'rook': 'Torre',
-            'queen': 'Rainha',
-            'king': 'Rei'
-        }[tipoPeca];
 
-        if (isRoquePequeno) return 'Roque-Pequeno (O-O)'; 
-        if (isRoqueGrande) return 'Roque-Grande (O-O-O)'; 
+    async proximoTurno() {
+        if (this.gameOver) return;
+        console.log(`Turno de: ${this.jogadorAtual.nome} (${this.jogadorAtual.cor})`);
 
-        notacao += nomePeca + ' ' + origem + '-' + destino;
+        if (this.jogadorAtual.tipo === 'IA') {
+            $('.board').addClass('ia-thinking');
+            const movimentoIA = await this.jogadorAtual.fazerMovimento(this);
+            $('.board').removeClass('ia-thinking');
 
-        if (isCaptura) {
-            notacao += ' (Captura)';
+            if (movimentoIA) {
+                const { peca, casaOrigem, casaDestino } = movimentoIA;
+                this.pecaEscolhida = peca;
+                this.ultimaCasa = casaOrigem;
+                this._tentarMoverPeca($('#' + casaDestino));
+            } else {
+                console.error("A IA falhou em retornar um movimento.");
+            }
+        }
+    }
+
+    _mostrarToast(mensagem, tipo = 'info') {
+        Swal.fire({
+            text: mensagem,
+            icon: tipo,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true
+        });
+    }
+
+    _registrarEventos() {
+        const self = this;
+        $('body').off('click.jogo').on('click.jogo', '.piece', function (e) {
+            e.stopPropagation();
+            if (self.jogadorAtual.tipo === 'Humano') {
+                self._selecionarPeca($(this));
+            }
+        });
+        $('body').off('click.quadrado').on('click.quadrado', '.square-board', function () {
+            if (self.jogadorAtual.tipo === 'Humano') {
+                self._tentarMoverPeca($(this));
+            }
+        });
+    }
+
+    _selecionarPeca(pecaClicada) {
+        const classe = pecaClicada.attr('class');
+        const casaId = pecaClicada.parent().attr('id');
+        if (!classe.includes(this.vezDo)) {
+            if (this.clicou === 1 && pecaClicada.parent().hasClass('possible')) {
+                pecaClicada.parent().trigger('click');
+            } else {
+                this._mostrarToast('Não é a sua vez de jogar!', 'error');
+            }
+            return;
+        }
+        this.clicou = 1;
+        this.ultimaCasa = casaId;
+        this.pecaEscolhida = pecaClicada;
+        this._mostrarMovimentosPossiveis(classe, casaId);
+    }
+
+    _tentarMoverPeca(casaAlvo) {
+        if (this.clicou !== 1 && this.jogadorAtual.tipo === 'Humano') {
+            this._mostrarToast('Selecione uma peça para mover.', 'info');
+            return;
         }
 
-        if (promocaoPara) {
-            const nomePromocao = promocaoPara.charAt(0).toUpperCase() + promocaoPara.slice(1);
-            notacao += ` (Promove a ${nomePromocao})`;
-        }
-        
-        return notacao;
+        const casaDestinoId = casaAlvo.attr('id');
+        const isMovimentoValido = casaDestinoId !== this.ultimaCasa && casaAlvo.hasClass('possible');
+        if (!isMovimentoValido && this.jogadorAtual.tipo === 'Humano') return;
+
+        const casaOrigemId = this.ultimaCasa;
+        const pecaMovida = this.pecaEscolhida;
+        this._atualizarFlagsDeRoque(pecaMovida, casaOrigemId);
+
+        const pecaCapturada = this._executarMovimento(pecaMovida, casaOrigemId, casaDestinoId);
+        const infoRoque = this._tratarRoque(pecaMovida, casaOrigemId, casaDestinoId);
+        const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId);
+        if (isPromocao) return;
+
+        this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
-    
-    // NOVO: Registra a jogada no array e atualiza a interface (RF05)
-    registrarJogada(notacao) {
-        this.historicoDeJogadas.push(notacao);
+
+    finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara = null) {
+        if (peca.hasClass('pawn') && Math.abs(origem[1] - destino[1]) === 2) {
+            const file = origem[0];
+            const rank = this.vezDo === 'white' ? parseInt(origem[1]) + 1 : parseInt(origem[1]) - 1;
+            this.enPassantTarget = file + rank;
+        } else {
+            this.enPassantTarget = null;
+        }
+
+        // NOVO: Registrar jogada detalhada
+        this.registrarJogada(origem, destino, peca);
+
+        this.vezDo = (this.vezDo === 'white') ? 'black' : 'white';
+        this.jogadorAtual = (this.jogadorAtual === this.jogador1) ? this.jogador2 : this.jogador1;
+        this.clicou = 0;
+        this.pecaEscolhida = null;
+
+        this._verificarCondicoesDeFimDeJogo();
+
+        if (!this.gameOver) {
+            this.proximoTurno();
+        }
+    }
+
+    _verificarCondicoesDeFimDeJogo() {
+        $('.xeque-highlight').removeClass('xeque-highlight');
+        const corDoProximoJogador = this.vezDo;
+
+        if (Xeque.estaEmXeque(corDoProximoJogador, this.movimento)) {
+            const reiEmXeque = $(`.piece.king-${corDoProximoJogador}`);
+            if (reiEmXeque.length) {
+                reiEmXeque.parent().addClass('xeque-highlight');
+            }
+
+            const corTexto = corDoProximoJogador === 'white' ? 'Branco' : 'Preto';
+            this._mostrarToast(`O Rei ${corTexto} está em Xeque!`, 'warning');
+        }
+    }
+
+    _atualizarFlagsDeRoque(peca, origem) {
+        const cor = peca.hasClass('white') ? 'white' : 'black';
+        if (peca.hasClass('king')) {
+            if (cor === 'white') this.whiteKingMoved = true;
+            else this.blackKingMoved = true;
+        } else if (peca.hasClass('rook')) {
+            if (cor === 'white') {
+                if (origem === 'a1') this.whiteRooksMoved.a1 = true;
+                if (origem === 'h1') this.whiteRooksMoved.h1 = true;
+            } else {
+                if (origem === 'a8') this.blackRooksMoved.a8 = true;
+                if (origem === 'h8') this.blackRooksMoved.h8 = true;
+            }
+        }
+    }
+
+    _gerarFEN() {
+        let fen = '';
+        const colunas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        for (let l = 8; l >= 1; l--) {
+            let casasVazias = 0;
+            for (let c = 0; c < colunas.length; c++) {
+                const casaId = colunas[c] + l;
+                const peca = $('#' + casaId).find('.piece');
+                if (peca.length > 0) {
+                    if (casasVazias > 0) { fen += casasVazias; casasVazias = 0; }
+                    const classe = peca.attr('class').split(' ')[1];
+                    const cor = classe.split('-')[1];
+                    let tipo = classe.split('-')[0];
+                    const mapaPecas = { 'pawn': 'p', 'knight': 'n', 'bishop': 'b', 'rook': 'r', 'queen': 'q', 'king': 'k' };
+                    let letraPeca = mapaPecas[tipo];
+                    if (cor === 'white') { letraPeca = letraPeca.toUpperCase(); }
+                    fen += letraPeca;
+                } else {
+                    casasVazias++;
+                }
+            }
+            if (casasVazias > 0) { fen += casasVazias; }
+            if (l > 1) { fen += '/'; }
+        }
+        fen += this.vezDo === 'white' ? ' w' : ' b';
+        let castling = '';
+        if (!this.whiteKingMoved) {
+            if (!this.whiteRooksMoved.h1) castling += 'K';
+            if (!this.whiteRooksMoved.a1) castling += 'Q';
+        }
+        if (!this.blackKingMoved) {
+            if (!this.blackRooksMoved.h8) castling += 'k';
+            if (!this.blackRooksMoved.a8) castling += 'q';
+        }
+        fen += ' ' + (castling || '-');
+        fen += ' ' + (this.enPassantTarget || '-');
+        fen += ' 0 1';
+        return fen;
+    }
+
+    // ✅ NOVO: Registro detalhado de jogadas (origem → destino)
+    registrarJogada(origem, destino, peca) {
+        const cor = this.vezDo === 'white' ? 'Brancas' : 'Pretas';
+        const tipoPeca = peca.attr('class').split(' ')[1].split('-')[0];
+
+        const mapaPecas = {
+            pawn: 'Peão',
+            knight: 'Cavalo',
+            bishop: 'Bispo',
+            rook: 'Torre',
+            queen: 'Dama',
+            king: 'Rei'
+        };
+
+        const nomePeca = mapaPecas[tipoPeca] || tipoPeca;
+        const descricao = `${nomePeca} (${origem} → ${destino})`;
+
+        this.historicoDeJogadas.push({
+            cor,
+            descricao,
+            origem,
+            destino,
+            tipoPeca
+        });
+
         this.atualizarInterfaceHistorico();
     }
 
-    // NOVO: Renderiza o histórico em formato de tabela (linhas separadas por jogada)
     atualizarInterfaceHistorico() {
-        // Remove o wrapper anterior para evitar duplicação antes de injetar a tabela
-        $('.stats .notation .notation-content').remove();
+        const notationContainer = $('.stats .notation');
+        if (!notationContainer.length) return;
 
-        // Inicia a estrutura da tabela
+        notationContainer.empty().append('<h3>Histórico de Jogadas</h3>');
         let html = '<div class="notation-content"><table><thead><tr><th>#</th><th>Brancas</th><th>Pretas</th></tr></thead><tbody>';
-        let moveIndex = 0;
 
         for (let i = 0; i < this.historicoDeJogadas.length; i += 2) {
-            moveIndex++;
-            const notacaoBrancas = this.historicoDeJogadas[i];
-            const notacaoPretas = this.historicoDeJogadas[i + 1] || ''; 
-            
-            html += `<tr>`;
-            
-            html += `<td class="move-number">${moveIndex}.</td>`;
-            html += `<td class="brancas-move">${notacaoBrancas}</td>`;
-            
-            if (notacaoPretas) {
-                html += `<td class="pretas-move">${notacaoPretas}</td>`;
-            } else {
-                html += `<td class="pretas-move">...</td>`; 
-            }
-            
-            html += `</tr>`;
+            const moveIndex = (i / 2) + 1;
+            const jogadaBrancas = this.historicoDeJogadas[i]
+                ? this.historicoDeJogadas[i].descricao
+                : '';
+            const jogadaPretas = this.historicoDeJogadas[i + 1]
+                ? this.historicoDeJogadas[i + 1].descricao
+                : '';
+            html += `<tr>
+                        <td class="move-number">${moveIndex}.</td>
+                        <td class="brancas-move">${jogadaBrancas}</td>
+                        <td class="pretas-move">${jogadaPretas}</td>
+                    </tr>`;
         }
-        
+
         html += '</tbody></table></div>';
-        
-        // ATUALIZA: Injeta o cabeçalho e a tabela no elemento .notation
-        $('.stats .notation').html('<h3>Histórico de Jogadas</h3>' + html);
+        notationContainer.append(html);
     }
 
-    registrarEventos() {
-        const self = this;
+    _mostrarMovimentosPossiveis(classe, casaId) {
+        $('.square-board').removeClass('possible');
+        const jaMoveuRei = (this.vezDo === 'white') ? this.whiteKingMoved : this.blackKingMoved;
+        const jaMoveuTorres = (this.vezDo === 'white') ? this.whiteRooksMoved : this.blackRooksMoved;
+        const movimentosPseudoLegais = this.movimento.movimentosPossiveis(classe, casaId, jaMoveuRei, jaMoveuTorres, this.enPassantTarget);
+        const pecaSelecionada = $('#' + casaId).find('.piece');
+        const movimentosFinais = this._filtrarMovimentosLegais(pecaSelecionada, movimentosPseudoLegais);
+        movimentosFinais.forEach(m => $('#' + m).addClass('possible'));
+    }
 
-        // clicar em peça
-        $('body').on('click', '.piece', function () {
-            let classe = $(this).attr('class');
-            let casaId = $(this).parent().attr('id');
+    _filtrarMovimentosLegais(peca, movimentos) {
+        const cor = this.vezDo;
+        const casaOrigemEl = peca.parent();
+        const movimentosLegais = [];
+        peca.detach();
+        for (const casaDestinoId of movimentos) {
+            const casaDestinoEl = $('#' + casaDestinoId);
+            let pecaCapturada = casaDestinoEl.children('.piece').first();
+            if (pecaCapturada.length > 0) { pecaCapturada.detach(); }
+            casaDestinoEl.append(peca);
+            if (!Xeque.estaEmXeque(cor, this.movimento)) {
+                movimentosLegais.push(casaDestinoId);
+            }
+            peca.detach();
+            if (pecaCapturada.length > 0) { casaDestinoEl.append(pecaCapturada); }
+        }
+        casaOrigemEl.append(peca);
+        return movimentosLegais;
+    }
 
-            if (classe.includes(self.vezDo)) {
-                self.clicou = 1;
-                self.ultimaCasa = casaId;
-                self.pecaEscolhida = $(this);
-                $('.square-board').removeClass('possible');
+    _executarMovimento(peca, origem, destino) {
+        const casaDestinoEl = $('#' + destino);
+        const pecaCapturada = casaDestinoEl.find('.piece');
+        if (pecaCapturada.length > 0) {
+            $('.stats .capturadas-list').append(pecaCapturada);
+        }
+        casaDestinoEl.html(peca);
+        if (origem) $('#' + origem).empty();
+        $('.square-board').removeClass('possible');
+        return pecaCapturada;
+    }
 
-                let jaMoveuRei = (self.vezDo === 'white') ? self.whiteKingMoved : self.blackKingMoved;
-                let jaMoveuTorres = (self.vezDo === 'white') ? self.whiteRooksMoved : self.blackRooksMoved;
+    _tratarRoque(peca, origem, destino) {
+        if (!peca.hasClass('king')) return { isRoquePequeno: false, isRoqueGrande: false };
+        const origemCol = origem[0]; const destinoCol = destino[0]; const linha = origem[1];
+        let isRoquePequeno = false, isRoqueGrande = false;
+        if (origemCol === 'e' && destinoCol === 'g') {
+            const torre = $('#h' + linha).find('.piece'); $('#f' + linha).html(torre); isRoquePequeno = true;
+        } else if (origemCol === 'e' && destinoCol === 'c') {
+            const torre = $('#a' + linha).find('.piece'); $('#d' + linha).html(torre); isRoqueGrande = true;
+        }
+        return { isRoquePequeno, isRoqueGrande };
+    }
 
-                let moves = self.movimento.movimentosPossiveis(classe, casaId, jaMoveuRei, jaMoveuTorres);
-                moves.forEach(m => $('#' + m).addClass('possible'));
-            } else if (self.clicou === 1 && $(this).parent().hasClass('possible')) {
-                $(this).parent().trigger('click');
-            } else {
-                 alert("⚠️ Não é sua vez! Escolha uma peça " + self.vezDo);
+    _tratarPromocao(peca, destino) { return false; }
+
+    _mostrarVencedorAnimado(vencedor) {
+        Swal.fire({
+            title: 'Xeque-Mate!',
+            text: `As ${vencedor} venceram a partida!`,
+            icon: 'success',
+            confirmButtonText: 'Jogar Novamente'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.reload();
             }
         });
+    }
 
-        // clicar em quadrado
-        $('body').on('click', '.square-board', function () {
-            if (self.clicou === 1) {
-                let idCasa = $(this).attr('id');
-                
-                if (idCasa !== self.ultimaCasa && $(this).hasClass('possible')) {
-                    let pecaCapturada = $(this).find('.piece');
-                    let moveRei = self.pecaEscolhida.hasClass('king');
-                    
-                    let notacaoFinal = '';
-                    let isRoquePequeno = false;
-                    let isRoqueGrande = false;
-                    let promocaoPara = null;
-
-                    // Captura
-                    if (pecaCapturada.length > 0) {
-                        $('.stats .capturadas-list').append(pecaCapturada); 
-                    }
-
-                    // Move Rei e trata Roque
-                    if (moveRei) {
-                        let origemCol = self.ultimaCasa[0];
-                        let destinoCol = idCasa[0];
-                        let linha = parseInt(idCasa[1]);
-                        let torreOrigem, torreDestino;
-
-                        if (origemCol === 'e' && destinoCol === 'g') { 
-                            isRoquePequeno = true; torreOrigem = 'h' + linha; torreDestino = 'f' + linha; 
-                        }
-                        if (origemCol === 'e' && destinoCol === 'c') { 
-                            isRoqueGrande = true; torreOrigem = 'a' + linha; torreDestino = 'd' + linha; 
-                        }
-
-                        if (torreOrigem && torreDestino) {
-                            let $torre = $('#' + torreOrigem).find('.piece');
-                            $('#' + torreDestino).html($torre);
-                            $('#' + torreOrigem).empty();
-                            if (self.vezDo === 'white') self.whiteRooksMoved[torreOrigem[0]] = true;
-                            else self.blackRooksMoved[torreOrigem[0]] = true;
-                        }
-                        if (self.vezDo === 'white') self.whiteKingMoved = true;
-                        else self.blackKingMoved = true;
-                    }
-
-                    // Move peça
-                    $(this).html(self.pecaEscolhida);
-                    $('#' + self.ultimaCasa).empty();
-                    $('.square-board').removeClass('possible');
-
-                    // ===== Promoção de Peão =====
-                    if ((self.pecaEscolhida.hasClass('pawn-white') && parseInt(idCasa[1]) === 8) ||
-                        (self.pecaEscolhida.hasClass('pawn-black') && parseInt(idCasa[1]) === 1)) {
-                        
-                        $('#promotionModal').data('square', idCasa); 
-                        $('#promotionModal').data('color', self.pecaEscolhida.hasClass('white') ? 'white' : 'black');
-                        $('.board').data('jogo', self); 
-                        $('#promotionModal').show();
-                        
-                    } else {
-                        // Movimento Normal/Roque: Gera notação, registra e troca a vez
-                        notacaoFinal = self.gerarNotacaoAlgébrica(
-                            self.ultimaCasa, idCasa, self.pecaEscolhida, pecaCapturada,
-                            isRoquePequeno, isRoqueGrande, promocaoPara
-                        );
-                        self.registrarJogada(notacaoFinal);
-                        
-                        // Troca vez
-                        self.vezDo = (self.vezDo === 'white') ? 'black' : 'white';
-                        self.clicou = 0;
-                    }
-                    
-                    // Marca torre como movida
-                    if (self.pecaEscolhida.hasClass('rook') && !isRoquePequeno && !isRoqueGrande) {
-                        if (self.vezDo === 'white') self.whiteRooksMoved[self.ultimaCasa[0]] = true;
-                        else self.blackRooksMoved[self.ultimaCasa[0]] = true;
-                    }
-                }
-            }
-        });
+    _gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
+        if (!peca || !peca.attr('class')) return "Jogada inválida";
+        const tipoPeca = peca.attr('class').split(' ')[1].split('-')[0];
+        const isCaptura = pecaCapturada && pecaCapturada.length > 0;
+        const nomePecaMap = { 'pawn': '', 'knight': 'C', 'bishop': 'B', 'rook': 'T', 'queen': 'D', 'king': 'R' };
+        let notacao = nomePecaMap[tipoPeca];
+        if (isRoquePequeno) return 'O-O';
+        if (isRoqueGrande) return 'O-O-O';
+        if (isCaptura) {
+            if (tipoPeca === 'pawn') notacao += origem[0];
+            notacao += 'x';
+        }
+        notacao += destino;
+        return notacao;
     }
 }
