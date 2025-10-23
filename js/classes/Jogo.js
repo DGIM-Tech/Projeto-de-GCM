@@ -22,7 +22,7 @@ export class Jogo {
         this.blackKingMoved = false;
         this.whiteRooksMoved = { a1: false, h1: false };
         this.blackRooksMoved = { a8: false, h8: false };
-        this.enPassantTarget = null; 
+        this.enPassantTarget = null;
     }
 
     iniciar() {
@@ -127,34 +127,162 @@ export class Jogo {
             this.enPassantTarget = null;
         }
 
-        // NOVO: Registrar jogada detalhada
         this.registrarJogada(origem, destino, peca);
 
-        this.vezDo = (this.vezDo === 'white') ? 'black' : 'white';
-        this.jogadorAtual = (this.jogadorAtual === this.jogador1) ? this.jogador2 : this.jogador1;
-        this.clicou = 0;
-        this.pecaEscolhida = null;
-
+        // Verifique condições de xeque antes de inverter turno
         this._verificarCondicoesDeFimDeJogo();
 
+        // Só depois mude a vez
         if (!this.gameOver) {
+            this.vezDo = (this.vezDo === 'white') ? 'black' : 'white';
+            this.jogadorAtual = (this.jogadorAtual === this.jogador1) ? this.jogador2 : this.jogador1;
+            this.clicou = 0;
+            this.pecaEscolhida = null;
             this.proximoTurno();
         }
     }
 
     _verificarCondicoesDeFimDeJogo() {
-        $('.xeque-highlight').removeClass('xeque-highlight');
-        const corDoProximoJogador = this.vezDo;
+        console.log(" INICIANDO VERIFICAÇÃO DE FIM DE JOGO");
 
-        if (Xeque.estaEmXeque(corDoProximoJogador, this.movimento)) {
-            const reiEmXeque = $(`.piece.king-${corDoProximoJogador}`);
-            if (reiEmXeque.length) {
-                reiEmXeque.parent().addClass('xeque-highlight');
+        // Remove destaque anterior
+        $('.xeque-highlight').removeClass('xeque-highlight');
+
+        
+        // Precisamos verificar o estado do OPONENTE.
+        const oponente = (this.vezDo === 'white') ? 'black' : 'white';
+        console.log(`Verificando estado do Oponente: ${oponente}`);
+
+        // VERIFICAÇÃO DE XEQUE
+        console.log("1. Verificando xeque...");
+        const emXeque = Xeque.estaEmXeque(oponente, this.movimento);
+
+        if (emXeque) {
+            console.log("2. Rei oponente em xeque! Verificando movimentos legais...");
+
+            // Destaca o rei oponente (SEU PEDIDO DE "QUADRADO VERMELHO")
+            $(`.king-${oponente}`).parent().addClass('xeque-highlight');
+
+            const temMovimentos = this._verificarMovimentosLegais(oponente);
+            console.log(`3. Movimentos legais encontrados: ${temMovimentos}`);
+
+            if (!temMovimentos) {
+                // É XEQUE-MATE
+                console.log("🎉 XEQUE-MATE DETECTADO!");
+                this.gameOver = true;
+                // Se o oponente for 'white', 'Pretas' venceram. Se for 'black', 'Brancas' venceram.
+                const vencedor = (oponente === 'white') ? 'Pretas' : 'Brancas';
+                console.log(`Vencedor: ${vencedor}`);
+                this._mostrarVencedorAnimado(vencedor);
+                return;
+            } else {
+                // É SÓ XEQUE
+                console.log(" Apenas xeque, não é mate");
+                const corTexto = (oponente === 'white') ? 'Branco' : 'Preto';
+                this._mostrarToast(`O Rei ${corTexto} está em Xeque!`, 'warning');
+            }
+        } else {
+            // NÃO ESTÁ EM XEQUE
+            console.log("4. Nenhum xeque. Verificando afogamento...");
+            const temMovimentos = this._verificarMovimentosLegais(oponente);
+
+            if (!temMovimentos) {
+                // É AFOGAMENTO
+                console.log(" AFOGAMENTO DETECTADO!");
+                this.gameOver = true;
+                this._mostrarEmpate();
+            } else {
+                // JOGO NORMAL
+                console.log(" Jogo continua normalmente");
+            }
+        }
+    }
+    _mostrarVencedorAnimado(vencedor) {
+        console.log(`CHAMANDO _mostrarVencedorAnimado: ${vencedor}`);
+
+        Swal.fire({
+            title: 'Xeque-Mate!',
+            text: `As ${vencedor} venceram a partida!`,
+            icon: 'success',
+            confirmButtonText: 'Jogar Novamente'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.reload();
+            }
+        });
+    }
+    _verificarMovimentosLegais(cor) {
+        console.log(`=== INICIANDO VERIFICAÇÃO DE MOVIMENTOS LEGAIS PARA ${cor} ===`);
+
+        // Encontrar peças por cor usando filter
+        const todasPecas = $('.piece');
+        const pecasDoJogador = todasPecas.filter(function () {
+            const classes = $(this).attr('class');
+            return classes && classes.includes(cor);
+        });
+
+        console.log(`Total de peças no tabuleiro: ${todasPecas.length}`);
+        console.log(`Peças do jogador ${cor}: ${pecasDoJogador.length}`);
+
+        let movimentosLegaisTotais = 0;
+
+        for (let i = 0; i < pecasDoJogador.length; i++) {
+            const peca = $(pecasDoJogador[i]);
+            const casaOrigemId = peca.parent().attr('id');
+            const classe = peca.attr('class');
+
+            // Verifica se a classe existe
+            if (!classe) {
+                console.log(`AVISO: Peça em ${casaOrigemId} não tem classe!`);
+                continue;
             }
 
-            const corTexto = corDoProximoJogador === 'white' ? 'Branco' : 'Preto';
-            this._mostrarToast(`O Rei ${corTexto} está em Xeque!`, 'warning');
+            const jaMoveuRei = (cor === 'white') ? this.whiteKingMoved : this.blackKingMoved;
+            const jaMoveuTorres = (cor === 'white') ? this.whiteRooksMoved : this.blackRooksMoved;
+
+            console.log(`\n--- Analisando peça: ${classe} em ${casaOrigemId} ---`);
+
+            try {
+                const movimentosPseudoLegais = this.movimento.movimentosPossiveis(
+                    classe,
+                    casaOrigemId,
+                    jaMoveuRei,
+                    jaMoveuTorres,
+                    this.enPassantTarget
+                );
+
+                console.log(`Movimentos pseudo-legais: ${movimentosPseudoLegais.length} → ${movimentosPseudoLegais.join(', ')}`);
+
+                // AQUI A MUDANÇA: Passamos a 'cor' que estamos verificando
+                const movimentosLegais = this._filtrarMovimentosLegais(peca, movimentosPseudoLegais, cor);
+
+                movimentosLegaisTotais += movimentosLegais.length;
+
+                console.log(`Movimentos legais: ${movimentosLegais.length} → ${movimentosLegais.join(', ')}`);
+
+                if (movimentosLegais.length > 0) {
+                    console.log(`ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
+                    return true;
+                }
+            } catch (error) {
+                console.error(`Erro ao calcular movimentos para peça em ${casaOrigemId}:`, error);
+            }
         }
+
+        console.log(`✗ NENHUM MOVIMENTO LEGAL para ${cor}. Total: ${movimentosLegaisTotais}`);
+        return movimentosLegaisTotais > 0;
+    }
+    _mostrarEmpate() {
+        Swal.fire({
+            title: 'Afogamento!',
+            text: 'Empate! O rei não está em xeque mas não tem movimentos legais.',
+            icon: 'info',
+            confirmButtonText: 'Jogar Novamente'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.reload();
+            }
+        });
     }
 
     _atualizarFlagsDeRoque(peca, origem) {
@@ -213,7 +341,7 @@ export class Jogo {
         return fen;
     }
 
-    // ✅ NOVO: Registro detalhado de jogadas (origem → destino)
+    //  NOVO: Registro detalhado de jogadas (origem → destino)
     registrarJogada(origem, destino, peca) {
         const cor = this.vezDo === 'white' ? 'Brancas' : 'Pretas';
         const tipoPeca = peca.attr('class').split(' ')[1].split('-')[0];
@@ -273,30 +401,95 @@ export class Jogo {
         const jaMoveuTorres = (this.vezDo === 'white') ? this.whiteRooksMoved : this.blackRooksMoved;
         const movimentosPseudoLegais = this.movimento.movimentosPossiveis(classe, casaId, jaMoveuRei, jaMoveuTorres, this.enPassantTarget);
         const pecaSelecionada = $('#' + casaId).find('.piece');
-        const movimentosFinais = this._filtrarMovimentosLegais(pecaSelecionada, movimentosPseudoLegais);
+
+        // AQUI A MUDANÇA: Passamos 'this.vezDo', a cor do jogador atual
+        const movimentosFinais = this._filtrarMovimentosLegais(pecaSelecionada, movimentosPseudoLegais, this.vezDo);
+
         movimentosFinais.forEach(m => $('#' + m).addClass('possible'));
     }
 
-    _filtrarMovimentosLegais(peca, movimentos) {
-        const cor = this.vezDo;
+    _filtrarMovimentosLegais(peca, movimentos, corParaVerificar) {
+        // AQUI A MUDANÇA: Usamos o parâmetro 'corParaVerificar'. 
+        // Se ele não for passado, usamos this.vezDo como segurança.
+        const cor = corParaVerificar || this.vezDo;
         const casaOrigemEl = peca.parent();
+        const casaOrigemId = casaOrigemEl.attr('id');
         const movimentosLegais = [];
-        peca.detach();
-        for (const casaDestinoId of movimentos) {
-            const casaDestinoEl = $('#' + casaDestinoId);
-            let pecaCapturada = casaDestinoEl.children('.piece').first();
-            if (pecaCapturada.length > 0) { pecaCapturada.detach(); }
-            casaDestinoEl.append(peca);
-            if (!Xeque.estaEmXeque(cor, this.movimento)) {
-                movimentosLegais.push(casaDestinoId);
-            }
-            peca.detach();
-            if (pecaCapturada.length > 0) { casaDestinoEl.append(pecaCapturada); }
+
+        console.log(`=== FILTRANDO MOVIMENTOS LEGAIS ===`);
+        console.log(`Peça: ${peca.attr('class')} em ${casaOrigemId}`);
+        console.log(`Verificando para a cor: ${cor}`); // Log para ajudar a debugar
+        console.log(`Movimentos a verificar: ${movimentos.length} → ${movimentos.join(', ')}`);
+
+        // Verificação de segurança
+        if (!casaOrigemId) {
+            console.error('Erro: casaOrigemId não definida');
+            return [];
         }
-        casaOrigemEl.append(peca);
+
+        for (const casaDestinoId of movimentos) {
+            // Verificar se a casa de destino existe
+            const casaDestinoEl = $('#' + casaDestinoId);
+            if (casaDestinoEl.length === 0) {
+                console.warn(`Casa de destino não encontrada: ${casaDestinoId}`);
+                continue;
+            }
+
+            console.log(`--- Verificando movimento: ${casaOrigemId} → ${casaDestinoId} ---`);
+
+            // Guardar estado ANTES da simulação
+            const pecaCapturada = casaDestinoEl.children('.piece').first();
+            const pecaCapturadaClone = pecaCapturada.length > 0 ? pecaCapturada.clone() : null;
+
+            try {
+                // 1. REMOVER peças temporariamente
+                if (pecaCapturada.length > 0) {
+                    pecaCapturada.detach();
+                }
+                peca.detach();
+
+                // 2. MOVER peça para destino
+                casaDestinoEl.append(peca);
+
+                // 3. VERIFICAR XEQUE (após o movimento)
+                // AQUI A MUDANÇA: 'cor' agora é a cor correta
+                console.log(`Verificando xeque para ${cor} após movimento...`);
+                const aindaEmXeque = Xeque.estaEmXeque(cor, this.movimento);
+                console.log(`Resultado: ${aindaEmXeque ? 'EM XEQUE' : 'SAFE'}`);
+
+                if (!aindaEmXeque) {
+                    movimentosLegais.push(casaDestinoId);
+                    console.log(`✓ Movimento legal: ${casaDestinoId}`);
+                } else {
+                    console.log(`✗ Movimento ilegal (xeque): ${casaDestinoId}`);
+                }
+
+            } catch (error) {
+                console.error(`Erro ao simular movimento ${casaOrigemId} → ${casaDestinoId}:`, error);
+            } finally {
+                // 4. RESTAURAR ESTADO ORIGINAL (IMPORTANTE!)
+
+                // Remover peça do destino
+                peca.detach();
+
+                // Restaurar na posição original
+                casaOrigemEl.append(peca);
+
+                // Restaurar peça capturada (se existia)
+                if (pecaCapturadaClone && pecaCapturadaClone.length > 0) {
+                    casaDestinoEl.append(pecaCapturadaClone);
+                } else if (pecaCapturada.length > 0) {
+                    // Fallback: se o clone não funcionou
+                    casaDestinoEl.append(pecaCapturada);
+                }
+
+                console.log(`Estado restaurado: peça de volta para ${casaOrigemId}`);
+            }
+        }
+
+        console.log(`=== RESULTADO: ${movimentosLegais.length} movimentos legais → ${movimentosLegais.join(', ')} ===`);
         return movimentosLegais;
     }
-
     _executarMovimento(peca, origem, destino) {
         const casaDestinoEl = $('#' + destino);
         const pecaCapturada = casaDestinoEl.find('.piece');
@@ -323,18 +516,7 @@ export class Jogo {
 
     _tratarPromocao(peca, destino) { return false; }
 
-    _mostrarVencedorAnimado(vencedor) {
-        Swal.fire({
-            title: 'Xeque-Mate!',
-            text: `As ${vencedor} venceram a partida!`,
-            icon: 'success',
-            confirmButtonText: 'Jogar Novamente'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.reload();
-            }
-        });
-    }
+
 
     _gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
         if (!peca || !peca.attr('class')) return "Jogada inválida";

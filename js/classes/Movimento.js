@@ -130,7 +130,7 @@ export class Movimento {
 
             const casaAtual = peca.parentElement.id;
             const tipo = classes.split(' ')[1]; // ex: 'rook-black'
-            
+
             let coluna = casaAtual[0];
             let linha = parseInt(casaAtual[1]);
             let idxCol = this.colunas.indexOf(coluna);
@@ -148,11 +148,11 @@ export class Movimento {
                 else if (tipo.includes('rook')) movimentosDeAtaque = this.movimentosTorre(tipo, coluna, linha, idxCol);
                 else if (tipo.includes('knight')) movimentosDeAtaque = this.movimentosCavalo(tipo, coluna, linha, idxCol);
                 else if (tipo.includes('queen')) movimentosDeAtaque = this.movimentosRainha(tipo, coluna, linha, idxCol);
-                else if (tipo.includes('king')) { 
+                else if (tipo.includes('king')) {
                     // Para o rei, calculamos um ataque simples de 1 casa para evitar loops infinitos
                     const tempReiMoves = [];
                     const direcoes = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-                    for(const [dc, dr] of direcoes) {
+                    for (const [dc, dr] of direcoes) {
                         if (this.colunas[idxCol + dc] && (linha + dr) >= 1 && (linha + dr) <= 8) {
                             tempReiMoves.push(this.colunas[idxCol + dc] + (linha + dr));
                         }
@@ -168,44 +168,34 @@ export class Movimento {
 
         return false; // A casa está segura.
     }
-
-    /**
-     * MÉTODO DO REI CORRIGIDO
-     * Agora utiliza isSquareAttacked para validar cada movimento.
-     */
     movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
         const movimentos = [];
         const cor = pieceClass.includes('white') ? 'white' : 'black';
-        const corInimiga = (cor === 'white') ? 'black' : 'white';
         const direcoes = [
             [1, 0], [-1, 0], [0, 1], [0, -1],
             [1, 1], [1, -1], [-1, 1], [-1, -1]
         ];
-    
+
         for (const [colDelta, rowDelta] of direcoes) {
             const newIdxCol = idxCol + colDelta;
             const newLinha = linha + rowDelta;
-            
+
             if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
-            
+
             const novaPosicao = this.colunas[newIdxCol] + newLinha;
-    
             const $casaDestino = $('#' + novaPosicao);
             const $pecaDestino = $casaDestino.find('.piece');
-    
+
             // Impede capturar peça da mesma cor
             if ($pecaDestino.length > 0 && $pecaDestino.attr('class').includes(cor)) continue;
 
-            // * A VERIFICAÇÃO CRÍTICA! *
-            // Só adiciona o movimento se a casa de destino NÃO estiver atacada.
-            if (!this.isSquareAttacked(novaPosicao, corInimiga)) {
-                movimentos.push(novaPosicao);
-            }
+            movimentos.push(novaPosicao);
         }
-    
+
         return movimentos;
     }
-    
+
+
     movimentosRainha(pieceClass, coluna, linha, idxCol) {
         let movimentos = [];
         movimentos.push(...this.movimentosTorre(pieceClass, coluna, linha, idxCol));

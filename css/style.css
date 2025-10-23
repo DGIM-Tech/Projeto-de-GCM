@@ -11,8 +11,19 @@ body{background:#eee;}
 	margin: 30px auto;
 	width: 1500px; 
 }
+.xeque-highlight {
+    background-color: rgba(255, 0, 0, 0.7) !important;
+    box-shadow: inset 0 0 10px #ff0000;
+}
+/* Adicione isso ao seu arquivo CSS */
+.square-board.xeque-highlight {
+    background-color: #ff6b6b !important;
+    box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.5);
+}
 
-
+.square-board.xeque-highlight .piece {
+    filter: drop-shadow(0 0 5px red);
+}
 /* === ENVOLTORIO DO TABULEIRO === */
 .board-wrapper {
 	display: flex;
