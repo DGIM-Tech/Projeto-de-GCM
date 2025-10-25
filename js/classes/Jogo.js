@@ -2,6 +2,7 @@
 
 import { Tabuleiro } from './Tabuleiro.js';
 import { Movimento } from './Movimento.js';
+import { Promocao } from './Promocao.js';
 import { Xeque } from './Xeque.js';
 import { XequeMate } from './XequeMate.js';
 
@@ -23,6 +24,7 @@ export class Jogo {
         this.whiteRooksMoved = { a1: false, h1: false };
         this.blackRooksMoved = { a8: false, h8: false };
         this.enPassantTarget = null;
+        this.movimentoPendente = null;
     }
 
     iniciar() {
@@ -493,12 +495,36 @@ export class Jogo {
     _executarMovimento(peca, origem, destino) {
         const casaDestinoEl = $('#' + destino);
         const pecaCapturada = casaDestinoEl.find('.piece');
+
+        //Verifica se houve captura
         if (pecaCapturada.length > 0) {
-            $('.stats .capturadas-list').append(pecaCapturada);
+            // Faz uma cópia da peça capturada
+            const pecaClone = pecaCapturada.clone();
+            const classeCapturada = pecaCapturada.attr('class') || '';
+
+            // Identifica a cor da peça capturada
+            const corCapturada = classeCapturada.includes('white') ? 'white' : 'black';
+
+            // Remove do tabuleiro
+            pecaCapturada.remove();
+
+            // Adiciona na área correta de capturas
+            if (corCapturada === 'white') {
+                // Preto capturou uma peça branca → vai para o topo
+                document.querySelector('.capturadas-brancas').appendChild(pecaClone[0]);
+            } else {
+                // Branco capturou uma peça preta → vai para a parte inferior
+                document.querySelector('.capturadas-pretas').appendChild(pecaClone[0]);
+            }
         }
+
+        // Move a peça para o destino
         casaDestinoEl.html(peca);
         if (origem) $('#' + origem).empty();
+
+        // Limpa os destaques de movimento
         $('.square-board').removeClass('possible');
+
         return pecaCapturada;
     }
 
@@ -514,9 +540,43 @@ export class Jogo {
         return { isRoquePequeno, isRoqueGrande };
     }
 
-    _tratarPromocao(peca, destino) { return false; }
+    // NOVO MÉTODO: Retoma o fluxo do jogo após a promoção ser concluída (pelo modal)
+    continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
+        // Chama a função de finalização de turno, que estava sendo evitada pela promoção.
+        // Aqui, promocaoPara não será null, se a promoção ocorreu.
+        this.finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara);
+    }
 
+    _tratarPromocao(peca, destino, pecaCapturada, infoRoque) { 
+        if (!peca.hasClass('pawn')) {
+            return false;
+        }
 
+        const cor = peca.hasClass('white') ? 'branca' : 'preta';
+        const tipoPeca = 'p'; 
+
+        // Cria o objeto peça para ser verificado na classe Promocao
+        const pecaLogica = { cor, tipo: tipoPeca }; 
+        
+        // Verifica a promoção
+        const isPromocao = Promocao.verificar(pecaLogica, destino);
+        
+        if (isPromocao) {
+            // Guarda as informações COMPLETA da jogada para finalizar após o modal
+            this.movimentoPendente = { 
+                peca: peca, 
+                destino: destino, 
+                origem: this.ultimaCasa,
+                pecaCapturada: pecaCapturada, // Salva o jQuery/DOM da peça capturada
+                infoRoque: infoRoque
+            };
+
+            // Exibe o modal e pausa o fluxo
+            $('#promotionModal').css('display', 'flex'); 
+        }
+
+        return isPromocao;
+    }
 
     _gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
         if (!peca || !peca.attr('class')) return "Jogada inválida";

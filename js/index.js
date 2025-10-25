@@ -3,6 +3,7 @@
 import { Jogo } from './classes/Jogo.js';
 import { Jogador } from './classes/Jogador.js';
 import { JogadorIA } from './classes/JogadorIA.js';
+import { Promocao } from './classes/Promocao.js';
 
 let jogoAtual = null;
 let ultimaConfiguracao = {};
@@ -154,16 +155,38 @@ document.addEventListener('DOMContentLoaded', () => {
         $('.stats .capturadas').append('<h3>Peças Capturadas</h3><div class="capturadas-list"></div>');
     });
 
-    $('body').on('click', '#promotionModal .promote', function() {
-        const jogo = $('.board').data('jogo');
-        if (!jogo) return;
+    ('body').on('click', '#promotionModal .promote', function() {
+        // Usa a referência global do jogo
+        if (!jogoAtual || !jogoAtual.movimentoPendente) return;
 
-        let piece = $(this).data('piece'); 
-        let squareId = $('#promotionModal').data('square');
-        let color = $('#promotionModal').data('color');
+        const button = $(this);
+        const novoTipoPeca = button.data('piece'); // 'queen', 'rook', etc.
+        const tipoCurto = novoTipoPeca[0].toLowerCase(); // 'q', 'r', 'b', 'n'
         
-        jogo.promoverPeao(squareId, piece, color);
+        const { origem, destino, peca, pecaCapturada, infoRoque } = jogoAtual.movimentoPendente;
+
+        // 1. Aplica a promoção: muda o tipo da peça no tabuleiro lógico e visual
+        Promocao.aplicar(
+            jogoAtual.tabuleiro, // Instância do Tabuleiro
+            destino, 
+            tipoCurto
+        );
         
-        $('#promotionModal').hide();
+        // 2. Oculta o modal
+        $('#promotionModal').css('display', 'none');
+
+        // 3. Retoma o turno no objeto Jogo com a função que criamos (passo 2 na resposta anterior)
+        // Note: pecaCapturada, infoRoque virão do estado que você salvou no movimentoPendente
+        jogoAtual.continuarTurnoAposPromocao(
+            origem,
+            destino,
+            peca,
+            null, // Captura não é relevante aqui (deve ser tratada antes)
+            { isRoquePequeno: false, isRoqueGrande: false }, // Roque não se aplica
+            tipoCurto // O tipo da peça promovida
+        );
+
+        // 4. Limpa o estado pendente
+        jogoAtual.movimentoPendente = null;
     });
 });

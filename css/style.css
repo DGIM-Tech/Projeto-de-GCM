@@ -34,6 +34,60 @@ body{background:#eee;}
     /* margin: 10px; */
 }
 
+/* === PAINEL DE PEÇAS CAPTURADAS === */
+.capturadas {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    width: 300px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.titulo-capturadas {
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.secao-capturas {
+    width: 100%;
+    margin-top: 5px;
+    padding-top: 6px;
+    text-align: center;
+}
+
+.secao-capturas:first-of-type {
+    border-top: none;
+}
+
+.titulo-cor {
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.area-capturas {
+    min-height: 202px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: left;
+    align-items: left;
+    gap: 3px;
+    padding: 4px;
+}
+
+.area-capturas .piece {
+    width: 45px;
+    height: 45px;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+
 /* === LINHAS DE LETRAS (a-h) === */
 .letters-top, .letters-bottom {
 	display: grid;
