@@ -24,10 +24,10 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     if (modo === 'amigo') {
         jogador1 = new Jogador('Jogador 1', 'brancas');
         jogador2 = new Jogador('Jogador 2', 'pretas');
-    } 
+    }
     else if (modo === 'computador') {
         const { nivelDificuldade, corJogador } = opcoes;
-        
+
         if (corJogador === 'brancas') {
             jogador1 = new Jogador('Você', 'brancas');
             jogador2 = new JogadorIA('pretas', nivelDificuldade);
@@ -38,6 +38,7 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     }
 
     jogoAtual = new Jogo(jogador1, jogador2);
+    window.jogoAtual = jogoAtual; // Torna global para acesso fácil
     $('.board').data('jogo', jogoAtual);
     jogoAtual.iniciar();
 }
@@ -66,11 +67,10 @@ function voltarParaInicio() {
 }
 window.voltarParaInicio = voltarParaInicio;
 
-
 // --- LÓGICA DA INTERFACE ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     const telaInicial = document.getElementById('telaInicial');
     const box = document.querySelector('.box');
     const controles = document.querySelector('.controles');
@@ -81,26 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
         controles.classList.add('ativo');
     }
 
-    // --- BOTÃO 'JOGAR CONTRA UM AMIGO' (Continua igual, está correto) ---
+    // --- BOTÃO 'JOGAR CONTRA UM AMIGO' ---
     document.getElementById('btnAmigo').addEventListener('click', () => {
         mostrarInterfaceJogo();
         iniciarNovaPartida('amigo');
     });
 
-    // --- BOTÃO 'JOGAR CONTRA O COMPUTADOR' (LÓGICA CORRIGIDA) ---
+    // --- BOTÃO 'JOGAR CONTRA O COMPUTADOR' ---
     document.getElementById('btnComputador').addEventListener('click', () => {
-        // 1. ESCONDE O MENU IMEDIATAMENTE PARA EVITAR O BUG.
         telaInicial.style.display = 'none';
 
-        // 2. Mostra o menu de configuração da partida.
         Swal.fire({
             title: '<strong>Configurar Partida</strong>',
             icon: 'info',
             html: `
                 <h3>Dificuldade da IA:</h3>
-                <label><input type="radio" name="dificuldade" value="iniciante"> 👶 Iniciante</label>
+                <label><input type="radio" name="dificuldade" value="iniciante" checked> 👶 Iniciante</label>
                 <label><input type="radio" name="dificuldade" value="fácil"> 🙂 Fácil</label>
-                <label><input type="radio" name="dificuldade" value="médio" checked> 🤔 Médio</label>
+                <label><input type="radio" name="dificuldade" value="médio" > 🤔 Médio</label>
                 <label><input type="radio" name="dificuldade" value="difícil"> 😈 Difícil</label>
 
                 <h3>Escolha sua cor:</h3>
@@ -119,21 +117,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }).then((result) => {
-            // 3. Este código só roda DEPOIS que o usuário interage com o menu.
             if (result.isConfirmed) {
-                // Se o usuário clicou "Jogar!":
                 const { dificuldade, corJogador } = result.value;
-                // A tela inicial já está escondida, só precisamos mostrar o tabuleiro.
                 box.classList.add('ativo');
                 controles.classList.add('ativo');
-                // Inicia o jogo no modo correto com as opções escolhidas.
-                iniciarNovaPartida('computador', { 
-                    nivelDificuldade: dificuldade, 
-                    corJogador: corJogador 
+                iniciarNovaPartida('computador', {
+                    nivelDificuldade: dificuldade,
+                    corJogador: corJogador
                 });
             } else {
-                // Se o usuário clicou "Cancelar" ou fechou a janela,
-                // mostramos o menu inicial de novo.
                 telaInicial.style.display = 'flex';
             }
         });
@@ -150,43 +142,28 @@ document.addEventListener('DOMContentLoaded', () => {
         reiniciarPartida();
     });
 
-    // --- CÓDIGO JQUERY (sem alterações) ---
-    $(function () {
-        $('.stats .capturadas').append('<h3>Peças Capturadas</h3><div class="capturadas-list"></div>');
+    // --- CÓDIGO DO MODAL DE PROMOÇÃO CORRIGIDO ---
+    $(document).on('click', '#promotionModal .promote', function () {
+
+        // 1. Verifica se o jogo existe e se está esperando uma promoção
+        if (!window.jogoAtual || !window.jogoAtual.movimentoPendente) {
+            console.error("Erro: jogoAtual ou movimentoPendente não definido");
+            $('#promotionModal').hide();
+            return;
+        }
+
+        // 2. Pega a peça escolhida (ex: "queen", "rook")
+        const novoTipoPeca = $(this).data('piece');
+
+        // 3. Esconde o modal
+        $('#promotionModal').hide();
+
+        // 4. CHAMA A LÓGICA DE CONCLUSÃO (Parte 3)
+        window.jogoAtual.promocaoConcluida(novoTipoPeca);
     });
 
-    ('body').on('click', '#promotionModal .promote', function() {
-        // Usa a referência global do jogo
-        if (!jogoAtual || !jogoAtual.movimentoPendente) return;
-
-        const button = $(this);
-        const novoTipoPeca = button.data('piece'); // 'queen', 'rook', etc.
-        const tipoCurto = novoTipoPeca[0].toLowerCase(); // 'q', 'r', 'b', 'n'
-        
-        const { origem, destino, peca, pecaCapturada, infoRoque } = jogoAtual.movimentoPendente;
-
-        // 1. Aplica a promoção: muda o tipo da peça no tabuleiro lógico e visual
-        Promocao.aplicar(
-            jogoAtual.tabuleiro, // Instância do Tabuleiro
-            destino, 
-            tipoCurto
-        );
-        
-        // 2. Oculta o modal
-        $('#promotionModal').css('display', 'none');
-
-        // 3. Retoma o turno no objeto Jogo com a função que criamos (passo 2 na resposta anterior)
-        // Note: pecaCapturada, infoRoque virão do estado que você salvou no movimentoPendente
-        jogoAtual.continuarTurnoAposPromocao(
-            origem,
-            destino,
-            peca,
-            null, // Captura não é relevante aqui (deve ser tratada antes)
-            { isRoquePequeno: false, isRoqueGrande: false }, // Roque não se aplica
-            tipoCurto // O tipo da peça promovida
-        );
-
-        // 4. Limpa o estado pendente
-        jogoAtual.movimentoPendente = null;
+    // Inicialização do jQuery
+    $(function () {
+        $('.stats .capturadas').append('<h3>Peças Capturadas</h3><div class="capturadas-list"></div>');
     });
 });

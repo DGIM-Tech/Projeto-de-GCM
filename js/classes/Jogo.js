@@ -106,20 +106,41 @@ export class Jogo {
 
         const casaDestinoId = casaAlvo.attr('id');
         const isMovimentoValido = casaDestinoId !== this.ultimaCasa && casaAlvo.hasClass('possible');
-        if (!isMovimentoValido && this.jogadorAtual.tipo === 'Humano') return;
+
+        if (!isMovimentoValido && this.jogadorAtual.tipo === 'Humano') {
+            console.log("Movimento inválido ou não é a vez do humano");
+            return;
+        }
 
         const casaOrigemId = this.ultimaCasa;
         const pecaMovida = this.pecaEscolhida;
+
+        console.log(`Tentando mover: ${casaOrigemId} → ${casaDestinoId}`);
+
         this._atualizarFlagsDeRoque(pecaMovida, casaOrigemId);
 
+        // Executa o movimento primeiro
         const pecaCapturada = this._executarMovimento(pecaMovida, casaOrigemId, casaDestinoId);
         const infoRoque = this._tratarRoque(pecaMovida, casaOrigemId, casaDestinoId);
-        const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId);
-        if (isPromocao) return;
 
+        // *** CORREÇÃO CRÍTICA AQUI ***
+        // Precisamos passar as informações do movimento para salvar o estado
+        const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
+
+        if (isPromocao) {
+            console.log("Promoção detectada - pausando turno para escolha da peça");
+            // PAUSA O JOGO: O 'return' impede que 'finalizarTurno' seja chamado
+            return;
+        }
+
+        // Se não é promoção, finaliza o turno normalmente
+        console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
-
+    continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
+        console.log("Continuando turno após promoção para:", promocaoPara);
+        this.finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara);
+    }
     finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara = null) {
         if (peca.hasClass('pawn') && Math.abs(origem[1] - destino[1]) === 2) {
             const file = origem[0];
@@ -150,7 +171,7 @@ export class Jogo {
         // Remove destaque anterior
         $('.xeque-highlight').removeClass('xeque-highlight');
 
-        
+
         // Precisamos verificar o estado do OPONENTE.
         const oponente = (this.vezDo === 'white') ? 'black' : 'white';
         console.log(`Verificando estado do Oponente: ${oponente}`);
@@ -216,11 +237,16 @@ export class Jogo {
     _verificarMovimentosLegais(cor) {
         console.log(`=== INICIANDO VERIFICAÇÃO DE MOVIMENTOS LEGAIS PARA ${cor} ===`);
 
-        // Encontrar peças por cor usando filter
-        const todasPecas = $('.piece');
+        // CORREÇÃO: Só considerar peças que estão no tabuleiro
+        const todasPecas = $('.square-board .piece'); // Só peças dentro de casas do tabuleiro
         const pecasDoJogador = todasPecas.filter(function () {
             const classes = $(this).attr('class');
-            return classes && classes.includes(cor);
+            const parent = $(this).parent();
+            // Verifica se está em uma casa válida do tabuleiro
+            return classes && classes.includes(cor) &&
+                parent.hasClass('square-board') &&
+                parent.attr('id') &&
+                parent.attr('id').match(/^[a-h][1-8]$/);
         });
 
         console.log(`Total de peças no tabuleiro: ${todasPecas.length}`);
@@ -230,10 +256,17 @@ export class Jogo {
 
         for (let i = 0; i < pecasDoJogador.length; i++) {
             const peca = $(pecasDoJogador[i]);
-            const casaOrigemId = peca.parent().attr('id');
+            const casaOrigemEl = peca.parent();
+
+            // VERIFICAÇÃO CRÍTICA: Garantir que a casa tem ID
+            if (!casaOrigemEl.length || !casaOrigemEl.attr('id')) {
+                console.log(`AVISO: Peça sem casa parent válida:`, peca.attr('class'));
+                continue;
+            }
+
+            const casaOrigemId = casaOrigemEl.attr('id');
             const classe = peca.attr('class');
 
-            // Verifica se a classe existe
             if (!classe) {
                 console.log(`AVISO: Peça em ${casaOrigemId} não tem classe!`);
                 continue;
@@ -255,23 +288,21 @@ export class Jogo {
 
                 console.log(`Movimentos pseudo-legais: ${movimentosPseudoLegais.length} → ${movimentosPseudoLegais.join(', ')}`);
 
-                // AQUI A MUDANÇA: Passamos a 'cor' que estamos verificando
                 const movimentosLegais = this._filtrarMovimentosLegais(peca, movimentosPseudoLegais, cor);
-
                 movimentosLegaisTotais += movimentosLegais.length;
 
                 console.log(`Movimentos legais: ${movimentosLegais.length} → ${movimentosLegais.join(', ')}`);
 
                 if (movimentosLegais.length > 0) {
-                    console.log(`ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
+                    console.log(`✅ ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
                     return true;
                 }
             } catch (error) {
-                console.error(`Erro ao calcular movimentos para peça em ${casaOrigemId}:`, error);
+                console.error(`❌ Erro ao calcular movimentos para peça em ${casaOrigemId}:`, error);
             }
         }
 
-        console.log(`✗ NENHUM MOVIMENTO LEGAL para ${cor}. Total: ${movimentosLegaisTotais}`);
+        console.log(`❌ NENHUM MOVIMENTO LEGAL para ${cor}. Total: ${movimentosLegaisTotais}`);
         return movimentosLegaisTotais > 0;
     }
     _mostrarEmpate() {
@@ -433,11 +464,11 @@ export class Jogo {
             // Verificar se a casa de destino existe
             const casaDestinoEl = $('#' + casaDestinoId);
             if (casaDestinoEl.length === 0) {
-                console.warn(`Casa de destino não encontrada: ${casaDestinoId}`);
+            //    console.warn(`Casa de destino não encontrada: ${casaDestinoId}`);
                 continue;
             }
 
-            console.log(`--- Verificando movimento: ${casaOrigemId} → ${casaDestinoId} ---`);
+         //   console.log(`--- Verificando movimento: ${casaOrigemId} → ${casaDestinoId} ---`);
 
             // Guardar estado ANTES da simulação
             const pecaCapturada = casaDestinoEl.children('.piece').first();
@@ -489,7 +520,7 @@ export class Jogo {
             }
         }
 
-        console.log(`=== RESULTADO: ${movimentosLegais.length} movimentos legais → ${movimentosLegais.join(', ')} ===`);
+        //console.log(`=== RESULTADO: ${movimentosLegais.length} movimentos legais → ${movimentosLegais.join(', ')} ===`);
         return movimentosLegais;
     }
     _executarMovimento(peca, origem, destino) {
@@ -539,6 +570,33 @@ export class Jogo {
         }
         return { isRoquePequeno, isRoqueGrande };
     }
+    promocaoConcluida(tipoPecaEscolhida) {
+        if (!this.movimentoPendente) {
+            console.error("Nenhum movimento pendente para promoção!");
+            return;
+        }
+
+        // 1. Pega as informações salvas
+        const { origem, destino, peca, pecaCapturada } = this.movimentoPendente;
+
+        console.log(`Promovendo peão para: ${tipoPecaEscolhida}`);
+
+        // 2. Remove o peão (o 'peca' do movimentoPendente)
+        peca.remove();
+
+        // 3. Adiciona a nova peça
+        const novaPeca = $(`<div class="piece ${tipoPecaEscolhida}-${this.vezDo}"></div>`);
+        $(`#${destino}`).html(novaPeca);
+
+        // 4. Limpa o estado de pendência
+        this.movimentoPendente = null;
+
+        // 5. RETOMA O JOGO: Chama o finalizarTurno que foi pausado
+        // Passa a 'novaPeca' como a peça que se moveu
+        this.finalizarTurno(origem, destino, novaPeca, pecaCapturada, null, tipoPecaEscolhida);
+
+        console.log("Promoção concluída com sucesso!");
+    }
 
     // NOVO MÉTODO: Retoma o fluxo do jogo após a promoção ser concluída (pelo modal)
     continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
@@ -547,37 +605,57 @@ export class Jogo {
         this.finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara);
     }
 
-    _tratarPromocao(peca, destino, pecaCapturada, infoRoque) { 
-        if (!peca.hasClass('pawn')) {
+    _tratarPromocao(peca, destino, origem, pecaCapturada) {
+        console.log("=== VERIFICANDO PROMOÇÃO ===");
+
+        // *** CORREÇÃO DO BUG 1 (O mais importante) ***
+        // O seu log provou que .hasClass() falha, mas .attr('class') funciona.
+        const classes = peca.attr('class');
+        console.log("Peça:", classes);
+        console.log("Destino:", destino);
+
+        // Verificamos a string de classes, e não o .hasClass()
+        if (!classes || !classes.includes('pawn')) {
+            console.log("❌ Não é peão (verificação por string), sem promoção");
             return false;
         }
 
-        const cor = peca.hasClass('white') ? 'branca' : 'preta';
-        const tipoPeca = 'p'; 
+        const linha = parseInt(destino[1]);
+        // Usamos a string 'classes' de novo por segurança
+        const cor = classes.includes('white') ? 'white' : 'black';
 
-        // Cria o objeto peça para ser verificado na classe Promocao
-        const pecaLogica = { cor, tipo: tipoPeca }; 
-        
-        // Verifica a promoção
-        const isPromocao = Promocao.verificar(pecaLogica, destino);
-        
-        if (isPromocao) {
-            // Guarda as informações COMPLETA da jogada para finalizar após o modal
-            this.movimentoPendente = { 
-                peca: peca, 
-                destino: destino, 
-                origem: this.ultimaCasa,
-                pecaCapturada: pecaCapturada, // Salva o jQuery/DOM da peça capturada
-                infoRoque: infoRoque
-            };
+        console.log("Linha destino:", linha, "Cor:", cor);
 
-            // Exibe o modal e pausa o fluxo
-            $('#promotionModal').css('display', 'flex'); 
+        // Verifica se chegou na última linha
+        const isUltimaLinha = (cor === 'white' && linha === 8) ||
+            (cor === 'black' && linha === 1);
+
+        console.log("É última linha?", isUltimaLinha);
+
+        if (!isUltimaLinha) {
+            console.log("❌ Não chegou na última linha, sem promoção");
+            return false;
         }
 
-        return isPromocao;
-    }
+        console.log("🎉 PROMOÇÃO DETECTADA! Exibindo modal...");
 
+        // Guarda as informações da jogada para finalizar após o modal
+        // Usamos os parâmetros que recebemos
+        this.movimentoPendente = {
+            peca: peca,
+            destino: destino,
+            origem: origem,
+            pecaCapturada: pecaCapturada ? pecaCapturada : null
+        };
+
+        // Exibe o modal (Seu HTML #promotionModal)
+        $('#promotionModal').css({
+            'display': 'block',
+            'z-index': '9999'
+        });
+
+        return true; // Retorna 'true' para pausar o _tentarMoverPeca
+    }
     _gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
         if (!peca || !peca.attr('class')) return "Jogada inválida";
         const tipoPeca = peca.attr('class').split(' ')[1].split('-')[0];
