@@ -1,8 +1,10 @@
 export class Movimento {
-    constructor() {
+    constructor(tabuleiro) {
+        this.tabuleiro = tabuleiro;
         this.colunas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     }
 
+    // --- FUNÇÃO ADICIONADA DE VOLTA ---
     movimentosPeao(pieceClass, coluna, linha, idxCol) {
         let movimentos = [];
         let direcao = pieceClass.includes('pawn-white') ? 1 : -1;
@@ -45,7 +47,7 @@ export class Movimento {
     movimentosBispo(pieceClass, coluna, linha, idxCol) {
         let movimentos = [];
         let corPeca = pieceClass.includes('white') ? 'white' : 'black';
-        const direcoes = [ [1, 1], [-1, 1], [1, -1], [-1, -1] ];
+        const direcoes = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
         for (const [colDelta, rowDelta] of direcoes) {
             for (let step = 1; step <= 7; step++) {
                 let newIdxCol = idxCol + colDelta * step;
@@ -70,7 +72,7 @@ export class Movimento {
     movimentosTorre(pieceClass, coluna, linha, idxCol) {
         let movimentos = [];
         let corPeca = pieceClass.includes('white') ? 'white' : 'black';
-        const direcoes = [ [1, 0], [-1, 0], [0, 1], [0, -1] ];
+        const direcoes = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         for (const [colDelta, rowDelta] of direcoes) {
             for (let step = 1; step <= 7; step++) {
                 let newIdxCol = idxCol + colDelta * step;
@@ -112,43 +114,99 @@ export class Movimento {
         return movimentos;
     }
 
-    movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
-        let movimentos = [];
-        let corPeca = pieceClass.includes('white') ? 'white' : 'black';
-        const offsets = [
-            [1, 0], [-1, 0], [0, 1], [0, -1],
-            [1, 1], [1, -1], [-1, 1], [-1, -1]
-        ];
+    /**
+     * NOVO MÉTODO AJUDANTE
+     * Verifica se uma determinada casa está sob ataque pelas peças de uma cor.
+     * @param {string} posicao - A casa a ser verificada (ex: 'e4').
+     * @param {string} corAtacante - A cor das peças que podem estar atacando ('white' ou 'black').
+     * @returns {boolean} - True se a casa estiver sob ataque.
+     */
+    isSquareAttacked(posicao, corAtacante) {
+        const pecas = document.querySelectorAll('.piece');
 
-        for (const [colDelta, rowDelta] of offsets) {
-            let newIdxCol = idxCol + colDelta;
-            let newLinha = linha + rowDelta;
-            if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
-            let destinoId = this.colunas[newIdxCol] + newLinha;
-            let $pecaDestino = $('#' + destinoId + ' .piece');
-            if ($pecaDestino.length === 0 || !$pecaDestino.attr('class').includes(corPeca)) {
-                movimentos.push(destinoId);
+        for (const peca of pecas) {
+            const classes = peca.className;
+            if (!classes.includes(corAtacante)) continue;
+
+            const casaAtual = peca.parentElement.id;
+            const tipo = classes.split(' ')[1]; // ex: 'rook-black'
+
+            let coluna = casaAtual[0];
+            let linha = parseInt(casaAtual[1]);
+            let idxCol = this.colunas.indexOf(coluna);
+
+            let movimentosDeAtaque;
+
+            // Para peões, só consideramos os movimentos de captura diagonal
+            if (tipo.includes('pawn')) {
+                let direcao = tipo.includes('white') ? 1 : -1;
+                movimentosDeAtaque = this.movimentosCaptura(coluna, linha, idxCol, direcao, '');
+            } else {
+                // Para outras peças, os movimentos de ataque são os mesmos que os de movimento
+                // Chamamos os métodos específicos para evitar lógica de xeque recursiva
+                if (tipo.includes('bishop')) movimentosDeAtaque = this.movimentosBispo(tipo, coluna, linha, idxCol);
+                else if (tipo.includes('rook')) movimentosDeAtaque = this.movimentosTorre(tipo, coluna, linha, idxCol);
+                else if (tipo.includes('knight')) movimentosDeAtaque = this.movimentosCavalo(tipo, coluna, linha, idxCol);
+                else if (tipo.includes('queen')) movimentosDeAtaque = this.movimentosRainha(tipo, coluna, linha, idxCol);
+                else if (tipo.includes('king')) {
+                    // Para o rei, calculamos um ataque simples de 1 casa para evitar loops infinitos
+                    const tempReiMoves = [];
+                    const direcoes = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                    for (const [dc, dr] of direcoes) {
+                        if (this.colunas[idxCol + dc] && (linha + dr) >= 1 && (linha + dr) <= 8) {
+                            tempReiMoves.push(this.colunas[idxCol + dc] + (linha + dr));
+                        }
+                    }
+                    movimentosDeAtaque = tempReiMoves;
+                }
+            }
+
+            if (movimentosDeAtaque && movimentosDeAtaque.includes(posicao)) {
+                return true; // A casa está sob ataque!
             }
         }
 
-        // Roque
-        if (!jaMoveuRei) {
-        // Pequeno (g1 ou g8)
-            if (!jaMoveuTorres['h'] &&
-                $('#' + this.colunas[idxCol + 1] + linha).children().length === 0 &&
-                $('#' + this.colunas[idxCol + 2] + linha).children().length === 0) {
-                movimentos.push(this.colunas[idxCol + 2] + linha);
-            }
-            // Grande (c1 ou c8)
-            if (!jaMoveuTorres['a'] &&
-                $('#' + this.colunas[idxCol - 1] + linha).children().length === 0 &&
-                $('#' + this.colunas[idxCol - 2] + linha).children().length === 0 &&
-                $('#' + this.colunas[idxCol - 3] + linha).children().length === 0) {
-                movimentos.push(this.colunas[idxCol - 2] + linha);
-            }
-        }
-        return movimentos;
+        return false; // A casa está segura.
     }
+movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
+    const movimentos = [];
+    const cor = pieceClass.includes('white') ? 'white' : 'black';
+    const direcoes = [
+        [1, 0], [-1, 0], [0, 1], [0, -1],
+        [1, 1], [1, -1], [-1, 1], [-1, -1]
+    ];
+
+    // Movimentos normais
+    for (const [colDelta, rowDelta] of direcoes) {
+        const newIdxCol = idxCol + colDelta;
+        const newLinha = linha + rowDelta;
+        if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
+        const novaPosicao = this.colunas[newIdxCol] + newLinha;
+        const $casaDestino = $('#' + novaPosicao);
+        const $pecaDestino = $casaDestino.find('.piece');
+        if ($pecaDestino.length > 0 && $pecaDestino.attr('class').includes(cor)) continue;
+        movimentos.push(novaPosicao);
+    }
+
+    // Roque pequeno
+    if (!jaMoveuRei) {
+        const linhaBase = (cor === 'white') ? 1 : 8;
+        const torreMoveu = (cor === 'white') ? jaMoveuTorres.h1 : jaMoveuTorres.h8;
+        if (!torreMoveu) {
+            const posicoesEntre = [(cor === 'white') ? 'f1' : 'f8', (cor === 'white') ? 'g1' : 'g8'];
+            const casasLivres = posicoesEntre.every(pos => $('#' + pos).find('.piece').length === 0);
+            const casasSeguras = posicoesEntre.every(pos => !this.isSquareAttacked(pos, cor === 'white' ? 'black' : 'white'));
+            const reiCasaInicial = this.colunas[idxCol] + linha;
+            const reiCasaSegura = !this.isSquareAttacked(reiCasaInicial, cor === 'white' ? 'black' : 'white');
+            if (casasLivres && casasSeguras && reiCasaSegura) {
+                movimentos.push((cor === 'white') ? 'g1' : 'g8');
+            }
+        }
+    }
+    return movimentos;
+}
+
+
 
     movimentosRainha(pieceClass, coluna, linha, idxCol) {
         let movimentos = [];
@@ -157,7 +215,7 @@ export class Movimento {
         return movimentos;
     }
 
-    movimentosPossiveis(pieceClass, squareId, jaMoveuRei = false, jaMoveuTorres = {a:false,h:false}) {
+    movimentosPossiveis(pieceClass, squareId, jaMoveuRei = false, jaMoveuTorres = { a: false, h: false }) {
         let coluna = squareId[0];
         let linha = parseInt(squareId[1]);
         let idxCol = this.colunas.indexOf(coluna);
