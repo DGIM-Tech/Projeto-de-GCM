@@ -1,22 +1,14 @@
 // js/index.js
-
 import { Jogo } from './classes/Jogo.js';
 import { Jogador } from './classes/Jogador.js';
 import { JogadorIA } from './classes/JogadorIA.js';
-import { Promocao } from './classes/Promocao.js';
 
 let jogoAtual = null;
 let ultimaConfiguracao = {};
 
-/**
- * Inicia uma nova partida.
- */
+/** Inicia nova partida */
 function iniciarNovaPartida(modo, opcoes = {}) {
-    console.log(`🚀 Iniciando novo jogo no modo: ${modo}`, opcoes);
-    ultimaConfiguracao = { modo, opcoes };
-
     $('.board').empty();
-    $('.stats .capturadas .capturadas-list').empty();
     $('.stats .notation').empty();
 
     let jogador1, jogador2;
@@ -24,10 +16,9 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     if (modo === 'amigo') {
         jogador1 = new Jogador('Jogador 1', 'brancas');
         jogador2 = new Jogador('Jogador 2', 'pretas');
-    }
+    } 
     else if (modo === 'computador') {
         const { nivelDificuldade, corJogador } = opcoes;
-
         if (corJogador === 'brancas') {
             jogador1 = new Jogador('Você', 'brancas');
             jogador2 = new JogadorIA('pretas', nivelDificuldade);
@@ -35,42 +26,44 @@ function iniciarNovaPartida(modo, opcoes = {}) {
             jogador1 = new JogadorIA('brancas', nivelDificuldade);
             jogador2 = new Jogador('Você', 'pretas');
         }
+    } 
+    else if (modo === 'restaurar' && opcoes.estado) {
+        jogoAtual = new Jogo();
+        jogoAtual.carregarEstado(opcoes.estado);
+        return;
     }
 
     jogoAtual = new Jogo(jogador1, jogador2);
-    window.jogoAtual = jogoAtual; // Torna global para acesso fácil
+    window.jogoAtual = jogoAtual;
     $('.board').data('jogo', jogoAtual);
     jogoAtual.iniciar();
+
+    ultimaConfiguracao = { modo, opcoes };
 }
 
-/**
- * Reinicia a partida com a última configuração.
- */
+/** Reinicia a partida */
 function reiniciarPartida() {
-    console.log("🔄 Reiniciando partida...");
     if (ultimaConfiguracao.modo) {
         iniciarNovaPartida(ultimaConfiguracao.modo, ultimaConfiguracao.opcoes);
     } else {
-        Swal.fire('Atenção', 'Você precisa iniciar uma partida antes de poder reiniciar!', 'warning');
+        Swal.fire('Atenção', 'Nenhum jogo para reiniciar!', 'warning');
     }
 }
 
-/**
- * Volta para a tela de menu inicial.
- */
-function voltarParaInicio() {
-    document.getElementById('modalDesistir').style.display = 'none';
-    document.getElementById('modalEmpate').style.display = 'none';
-    document.querySelector('.box').classList.remove('ativo');
-    document.querySelector('.controles').classList.remove('ativo');
-    document.getElementById('telaInicial').style.display = 'flex';
+/** Reinicia automaticamente ao desistir ou empatar */
+function finalizarPartida(mensagem) {
+    Swal.fire({
+        title: mensagem,
+        text: "A partida será reiniciada automaticamente.",
+        icon: "info",
+        confirmButtonText: "Ok"
+    }).then(() => {
+        localStorage.removeItem('estadoJogo');
+        reiniciarPartida();
+    });
 }
-window.voltarParaInicio = voltarParaInicio;
-
-// --- LÓGICA DA INTERFACE ---
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const telaInicial = document.getElementById('telaInicial');
     const box = document.querySelector('.box');
     const controles = document.querySelector('.controles');
@@ -81,16 +74,42 @@ document.addEventListener('DOMContentLoaded', () => {
         controles.classList.add('ativo');
     }
 
-    // --- BOTÃO 'JOGAR CONTRA UM AMIGO' ---
+    // 🔹 Verifica jogo salvo no cache
+    const estadoSalvo = localStorage.getItem('estadoJogo');
+    if (estadoSalvo) {
+        try {
+            const dados = JSON.parse(estadoSalvo);
+            if (dados && dados.tabuleiro) {
+                Swal.fire({
+                    title: 'Continuar jogo anterior?',
+                    text: 'Deseja retomar o jogo salvo?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sim',
+                    cancelButtonText: 'Novo jogo'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        mostrarInterfaceJogo();
+                        iniciarNovaPartida('restaurar', { estado: dados });
+                    } else {
+                        localStorage.removeItem('estadoJogo');
+                        telaInicial.style.display = 'flex';
+                    }
+                });
+            }
+        } catch {
+            localStorage.removeItem('estadoJogo');
+        }
+    }
+
+    // --- Botões iniciais ---
     document.getElementById('btnAmigo').addEventListener('click', () => {
         mostrarInterfaceJogo();
         iniciarNovaPartida('amigo');
     });
 
-    // --- BOTÃO 'JOGAR CONTRA O COMPUTADOR' ---
     document.getElementById('btnComputador').addEventListener('click', () => {
         telaInicial.style.display = 'none';
-
         Swal.fire({
             title: '<strong>Configurar Partida</strong>',
             icon: 'info',
@@ -98,32 +117,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>Dificuldade da IA:</h3>
                 <label><input type="radio" name="dificuldade" value="iniciante" checked> 👶 Iniciante</label>
                 <label><input type="radio" name="dificuldade" value="fácil"> 🙂 Fácil</label>
-                <label><input type="radio" name="dificuldade" value="médio" > 🤔 Médio</label>
+                <label><input type="radio" name="dificuldade" value="médio"> 🤔 Médio</label>
                 <label><input type="radio" name="dificuldade" value="difícil"> 😈 Difícil</label>
-
                 <h3>Escolha sua cor:</h3>
-                <label><input type="radio" name="cor" value="brancas" checked> ⚪ Brancas (Você começa)</label>
+                <label><input type="radio" name="cor" value="brancas" checked> ⚪ Brancas</label>
                 <label><input type="radio" name="cor" value="pretas"> ⚫ Pretas</label>
             `,
-            showCloseButton: true,
             showCancelButton: true,
-            focusConfirm: false,
             confirmButtonText: '▶️ Jogar!',
             cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-                return {
-                    dificuldade: document.querySelector('input[name="dificuldade"]:checked').value,
-                    corJogador: document.querySelector('input[name="cor"]:checked').value
-                }
-            }
+            preConfirm: () => ({
+                dificuldade: document.querySelector('input[name="dificuldade"]:checked').value,
+                corJogador: document.querySelector('input[name="cor"]:checked').value
+            })
         }).then((result) => {
             if (result.isConfirmed) {
-                const { dificuldade, corJogador } = result.value;
-                box.classList.add('ativo');
-                controles.classList.add('ativo');
+                mostrarInterfaceJogo();
                 iniciarNovaPartida('computador', {
-                    nivelDificuldade: dificuldade,
-                    corJogador: corJogador
+                    nivelDificuldade: result.value.dificuldade,
+                    corJogador: result.value.corJogador
                 });
             } else {
                 telaInicial.style.display = 'flex';
@@ -131,39 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- BOTÕES DE CONTROLE DO JOGO ---
+    // --- Botões de controle ---
     document.getElementById('btnDesistir').addEventListener('click', () => {
-        document.getElementById('modalDesistir').style.display = 'flex';
+        finalizarPartida('Você desistiu da partida.');
     });
     document.getElementById('btnEmpate').addEventListener('click', () => {
-        document.getElementById('modalEmpate').style.display = 'flex';
+        finalizarPartida('A partida terminou em empate.');
     });
     document.getElementById('btnReiniciar').addEventListener('click', () => {
         reiniciarPartida();
-    });
-
-    // --- CÓDIGO DO MODAL DE PROMOÇÃO CORRIGIDO ---
-    $(document).on('click', '#promotionModal .promote', function () {
-
-        // 1. Verifica se o jogo existe e se está esperando uma promoção
-        if (!window.jogoAtual || !window.jogoAtual.movimentoPendente) {
-            console.error("Erro: jogoAtual ou movimentoPendente não definido");
-            $('#promotionModal').hide();
-            return;
-        }
-
-        // 2. Pega a peça escolhida (ex: "queen", "rook")
-        const novoTipoPeca = $(this).data('piece');
-
-        // 3. Esconde o modal
-        $('#promotionModal').hide();
-
-        // 4. CHAMA A LÓGICA DE CONCLUSÃO (Parte 3)
-        window.jogoAtual.promocaoConcluida(novoTipoPeca);
-    });
-
-    // Inicialização do jQuery
-    $(function () {
-        $('.stats .capturadas').append('<h3>Peças Capturadas</h3><div class="capturadas-list"></div>');
     });
 });

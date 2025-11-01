@@ -6,7 +6,6 @@
     <link href="css/style.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
-        /* Tela inicial */
         .tela-inicial {
             position: fixed; inset: 0; background: #0E7886;
             display: flex; flex-direction: column; justify-content: center;
@@ -19,15 +18,20 @@
             border-radius: 8px; margin: 10px; cursor: pointer; transition: 0.3s;
         }
         .tela-inicial button:hover { background: #0b5f68; color: white; }
-        
-        .box, .controles {
-            visibility: hidden; opacity: 0; transition: opacity 0.6s ease;
-        }
+
+        .box, .controles { visibility: hidden; opacity: 0; transition: opacity 0.6s ease; }
         .box.ativo, .controles.ativo { visibility: visible; opacity: 1; }
-        
-        .swal2-html-container { text-align: left; margin: 1em 2em 0.3em !important; }
+
+        .btn-controle {
+            padding: 10px 25px; margin: 5px; border: none; border-radius: 6px;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .vermelho { background: #dc3545; color: white; }
+        .cinza { background: #6c757d; color: white; }
+        .azul { background: #0d6efd; color: white; }
+        .btn-controle:hover { opacity: 0.85; }
+
         .swal2-html-container h3 { margin-top: 15px; margin-bottom: 8px; }
-        .swal2-html-container label { display: block; margin-bottom: 5px; font-size: 1em; }
     </style>
 </head>
 
@@ -41,18 +45,18 @@
     <div class="box">
         <div class="stats">
             <div class="capturadas">
-                <h3 class="titulo-capturadas-geral">Peças Capturadas</h3> <div class="secao-capturas"></div>
+                <h3>Peças Capturadas</h3>
                 <div class="secao-capturas">
-                    <h4 class="titulo-cor">Capturas pretas</h4>
+                    <h4>Capturas pretas</h4>
                     <div class="area-capturas capturadas-brancas"></div>
                 </div>
-
                 <div class="secao-capturas">
-                    <h4 class="titulo-cor">Capturas brancas</h4>
+                    <h4>Capturas brancas</h4>
                     <div class="area-capturas capturadas-pretas"></div>
                 </div>
             </div>
         </div>
+
         <div class="board-wrapper">
             <div class="letters-top"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
             <div class="board-row">
@@ -62,6 +66,7 @@
             </div>
             <div class="letters-bottom"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
         </div>
+
         <div class="stats">
             <div class="notation"></div>
         </div>
@@ -73,34 +78,19 @@
         <button id="btnReiniciar" class="btn-controle azul">Reiniciar</button>
     </div>
 
-    <div id="promotionModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border:2px solid #000; z-index:1000; text-align:center;">
+    <!-- Modal de promoção -->
+    <div id="promotionModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        background:#fff; padding:20px; border:2px solid #000; z-index:1000; text-align:center;">
         <h3>Escolha a peça para promoção</h3>
         <button class="promote" data-piece="queen">Rainha</button>
         <button class="promote" data-piece="rook">Torre</button>
         <button class="promote" data-piece="bishop">Bispo</button>
         <button class="promote" data-piece="knight">Cavalo</button>
     </div>
-    
-    <div id="modalDesistir" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:3000;">
-        <div style="background:white; padding:30px; text-align:center; border-radius:8px;">
-            <h2>Partida Abandonada</h2>
-            <button onclick="voltarParaInicio()" style="padding:10px 30px; background:#0E7886; color:white; border:none; border-radius:5px;">Voltar ao início</button>
-        </div>
-    </div>
-    
-    <div id="modalEmpate" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:3000;">
-        <div style="background:white; padding:30px; text-align:center; border-radius:8px;">
-            <h2>Partida Empatada</h2>
-            <button onclick="voltarParaInicio()" style="padding:10px 30px; background:#0E7886; color:white; border:none; border-radius:5px;">Voltar ao início</button>
-        </div>
-    </div>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    
-    <!-- O único script necessário é o módulo. Toda a lógica agora está nele. -->
     <script type="module" src="js/index.js"></script>
-    
-    </body>
+</body>
 </html>

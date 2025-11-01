@@ -163,6 +163,14 @@ export class Jogo {
             this.pecaEscolhida = null;
             this.proximoTurno();
         }
+        // Salva o estado do jogo no cache após cada jogada
+        try {
+            const estado = this.salvarEstado();
+            localStorage.setItem('estadoJogo', JSON.stringify(estado));
+            // console.log('💾 Estado do jogo salvo automaticamente.');
+        } catch (e) {
+            console.error('Erro ao salvar estado do jogo:', e);
+        }
     }
 
     _verificarCondicoesDeFimDeJogo() {
@@ -670,5 +678,53 @@ export class Jogo {
         }
         notacao += destino;
         return notacao;
+    }
+
+    salvarEstado() {
+        const pecas = {};
+        $('.square-board').each(function () {
+            const id = $(this).attr('id');
+            const peca = $(this).find('.piece');
+            pecas[id] = peca.length ? peca.attr('class') : null;
+        });
+
+        return {
+            pecas,
+            vezDo: this.vezDo,
+            jogador1: this.jogador1,
+            jogador2: this.jogador2,
+            historicoDeJogadas: this.historicoDeJogadas,
+            whiteKingMoved: this.whiteKingMoved,
+            blackKingMoved: this.blackKingMoved,
+            whiteRooksMoved: this.whiteRooksMoved,
+            blackRooksMoved: this.blackRooksMoved,
+            enPassantTarget: this.enPassantTarget
+        };
+    }
+
+    salvarEstadoNoCache() {
+        localStorage.setItem('estadoJogo', JSON.stringify(this.salvarEstado()));
+    }
+
+    carregarEstado(estado) {
+        $('.square-board').empty();
+        for (const casa in estado.pecas) {
+            if (estado.pecas[casa]) {
+                $(`#${casa}`).html(`<div class="${estado.pecas[casa]}"></div>`);
+            }
+        }
+
+        this.vezDo = estado.vezDo;
+        this.jogador1 = estado.jogador1;
+        this.jogador2 = estado.jogador2;
+        this.historicoDeJogadas = estado.historicoDeJogadas || [];
+        this.whiteKingMoved = estado.whiteKingMoved;
+        this.blackKingMoved = estado.blackKingMoved;
+        this.whiteRooksMoved = estado.whiteRooksMoved;
+        this.blackRooksMoved = estado.blackRooksMoved;
+        this.enPassantTarget = estado.enPassantTarget;
+
+        this._registrarEventos();
+        console.log('♟️ Estado restaurado do cache.');
     }
 }
