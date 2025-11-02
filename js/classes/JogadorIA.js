@@ -12,8 +12,8 @@ export class JogadorIA extends Jogador {
     async fazerMovimento(jogo) {
         const profundidade = {
             'iniciante': 1,
-            'fácil': 3,
-            'médio': 6,
+            'fácil': 5,
+            'médio': 8,
             'difícil': 13
         }[this.nivelDificuldade];
         

@@ -472,11 +472,11 @@ export class Jogo {
             // Verificar se a casa de destino existe
             const casaDestinoEl = $('#' + casaDestinoId);
             if (casaDestinoEl.length === 0) {
-            //    console.warn(`Casa de destino não encontrada: ${casaDestinoId}`);
+                //    console.warn(`Casa de destino não encontrada: ${casaDestinoId}`);
                 continue;
             }
 
-         //   console.log(`--- Verificando movimento: ${casaOrigemId} → ${casaDestinoId} ---`);
+            //   console.log(`--- Verificando movimento: ${casaOrigemId} → ${casaDestinoId} ---`);
 
             // Guardar estado ANTES da simulação
             const pecaCapturada = casaDestinoEl.children('.piece').first();
@@ -616,27 +616,21 @@ export class Jogo {
     _tratarPromocao(peca, destino, origem, pecaCapturada) {
         console.log("=== VERIFICANDO PROMOÇÃO ===");
 
-        // *** CORREÇÃO DO BUG 1 (O mais importante) ***
-        // O seu log provou que .hasClass() falha, mas .attr('class') funciona.
         const classes = peca.attr('class');
         console.log("Peça:", classes);
         console.log("Destino:", destino);
 
-        // Verificamos a string de classes, e não o .hasClass()
         if (!classes || !classes.includes('pawn')) {
-            console.log("❌ Não é peão (verificação por string), sem promoção");
+            console.log("❌ Não é peão, sem promoção");
             return false;
         }
 
         const linha = parseInt(destino[1]);
-        // Usamos a string 'classes' de novo por segurança
         const cor = classes.includes('white') ? 'white' : 'black';
 
         console.log("Linha destino:", linha, "Cor:", cor);
 
-        // Verifica se chegou na última linha
-        const isUltimaLinha = (cor === 'white' && linha === 8) ||
-            (cor === 'black' && linha === 1);
+        const isUltimaLinha = (cor === 'white' && linha === 8) || (cor === 'black' && linha === 1);
 
         console.log("É última linha?", isUltimaLinha);
 
@@ -647,8 +641,7 @@ export class Jogo {
 
         console.log("🎉 PROMOÇÃO DETECTADA! Exibindo modal...");
 
-        // Guarda as informações da jogada para finalizar após o modal
-        // Usamos os parâmetros que recebemos
+        // Guarda as informações da jogada
         this.movimentoPendente = {
             peca: peca,
             destino: destino,
@@ -656,14 +649,39 @@ export class Jogo {
             pecaCapturada: pecaCapturada ? pecaCapturada : null
         };
 
-        // Exibe o modal (Seu HTML #promotionModal)
-        $('#promotionModal').css({
-            'display': 'block',
-            'z-index': '9999'
-        });
+        // Exibe o modal
+        $('#promotionModal').show();
 
-        return true; // Retorna 'true' para pausar o _tentarMoverPeca
+        // Registrar eventos para os botões (usando a classe 'promote')
+        this._registrarEventosPromocao();
+
+        return true;
     }
+
+    // Método para registrar eventos do modal
+    _registrarEventosPromocao() {
+        const self = this;
+
+        // Remove eventos anteriores
+        $('#promotionModal .promote').off('click.promocao');
+
+        // Adiciona novos eventos
+        $('#promotionModal .promote').on('click.promocao', function () {
+            const tipoPeca = $(this).data('piece');
+            console.log(`Peça selecionada para promoção: ${tipoPeca}`);
+
+            // Fecha o modal
+            $('#promotionModal').hide();
+
+            // Processa a promoção
+            if (self.movimentoPendente) {
+                self.promocaoConcluida(tipoPeca);
+            } else {
+                console.error("Erro: Nenhum movimento pendente para promoção!");
+            }
+        });
+    }
+
     _gerarNotacaoAlgébrica(origem, destino, peca, pecaCapturada, isRoquePequeno, isRoqueGrande, promocaoPara) {
         if (!peca || !peca.attr('class')) return "Jogada inválida";
         const tipoPeca = peca.attr('class').split(' ')[1].split('-')[0];
