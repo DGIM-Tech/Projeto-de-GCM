@@ -137,74 +137,156 @@ export class Movimento {
 
             let movimentosDeAtaque;
 
-            // Para peões, só consideramos os movimentos de captura diagonal
+            // *** CORREÇÃO PARA PEÕES - Só diagonais para ataque ***
             if (tipo.includes('pawn')) {
+                movimentosDeAtaque = [];
                 let direcao = tipo.includes('white') ? 1 : -1;
-                movimentosDeAtaque = this.movimentosCaptura(coluna, linha, idxCol, direcao, '');
-            } else {
-                // Para outras peças, os movimentos de ataque são os mesmos que os de movimento
-                // Chamamos os métodos específicos para evitar lógica de xeque recursiva
-                if (tipo.includes('bishop')) movimentosDeAtaque = this.movimentosBispo(tipo, coluna, linha, idxCol);
-                else if (tipo.includes('rook')) movimentosDeAtaque = this.movimentosTorre(tipo, coluna, linha, idxCol);
-                else if (tipo.includes('knight')) movimentosDeAtaque = this.movimentosCavalo(tipo, coluna, linha, idxCol);
-                else if (tipo.includes('queen')) movimentosDeAtaque = this.movimentosRainha(tipo, coluna, linha, idxCol);
-                else if (tipo.includes('king')) {
-                    // Para o rei, calculamos um ataque simples de 1 casa para evitar loops infinitos
-                    const tempReiMoves = [];
-                    const direcoes = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-                    for (const [dc, dr] of direcoes) {
-                        if (this.colunas[idxCol + dc] && (linha + dr) >= 1 && (linha + dr) <= 8) {
-                            tempReiMoves.push(this.colunas[idxCol + dc] + (linha + dr));
-                        }
-                    }
-                    movimentosDeAtaque = tempReiMoves;
+
+                // Diagonal esquerda
+                if (idxCol > 0) {
+                    const destinoEsq = this.colunas[idxCol - 1] + (linha + direcao);
+                    movimentosDeAtaque.push(destinoEsq);
                 }
+                // Diagonal direita
+                if (idxCol < 7) {
+                    const destinoDir = this.colunas[idxCol + 1] + (linha + direcao);
+                    movimentosDeAtaque.push(destinoDir);
+                }
+            }
+            // Restante do método permanece igual...
+            else if (tipo.includes('bishop')) {
+                movimentosDeAtaque = this.movimentosBispo(tipo, coluna, linha, idxCol);
+            }
+            else if (tipo.includes('rook')) {
+                movimentosDeAtaque = this.movimentosTorre(tipo, coluna, linha, idxCol);
+            }
+            else if (tipo.includes('knight')) {
+                movimentosDeAtaque = this.movimentosCavalo(tipo, coluna, linha, idxCol);
+            }
+            else if (tipo.includes('queen')) {
+                movimentosDeAtaque = this.movimentosRainha(tipo, coluna, linha, idxCol);
+            }
+            else if (tipo.includes('king')) {
+                // Para o rei, movimentos de ataque são os mesmos que movimentos normais
+                const tempReiMoves = [];
+                const direcoes = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const [dc, dr] of direcoes) {
+                    if (this.colunas[idxCol + dc] && (linha + dr) >= 1 && (linha + dr) <= 8) {
+                        tempReiMoves.push(this.colunas[idxCol + dc] + (linha + dr));
+                    }
+                }
+                movimentosDeAtaque = tempReiMoves;
             }
 
             if (movimentosDeAtaque && movimentosDeAtaque.includes(posicao)) {
-                return true; // A casa está sob ataque!
+                return true;
             }
         }
 
-        return false; // A casa está segura.
+        return false;
     }
-movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
-    const movimentos = [];
-    const cor = pieceClass.includes('white') ? 'white' : 'black';
-    const direcoes = [
-        [1, 0], [-1, 0], [0, 1], [0, -1],
-        [1, 1], [1, -1], [-1, 1], [-1, -1]
-    ];
+    movimentosRei(pieceClass, coluna, linha, idxCol, jaMoveuRei, jaMoveuTorres) {
+        const movimentos = [];
+        const cor = pieceClass.includes('white') ? 'white' : 'black';
+        const direcoes = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [1, -1], [-1, 1], [-1, -1]
+        ];
 
-    // Movimentos normais
-    for (const [colDelta, rowDelta] of direcoes) {
-        const newIdxCol = idxCol + colDelta;
-        const newLinha = linha + rowDelta;
-        if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
-        const novaPosicao = this.colunas[newIdxCol] + newLinha;
-        const $casaDestino = $('#' + novaPosicao);
-        const $pecaDestino = $casaDestino.find('.piece');
-        if ($pecaDestino.length > 0 && $pecaDestino.attr('class').includes(cor)) continue;
-        movimentos.push(novaPosicao);
-    }
+        // Movimentos normais do rei
+        for (const [colDelta, rowDelta] of direcoes) {
+            const newIdxCol = idxCol + colDelta;
+            const newLinha = linha + rowDelta;
+            if (newIdxCol < 0 || newIdxCol > 7 || newLinha < 1 || newLinha > 8) continue;
 
-    // Roque pequeno
-    if (!jaMoveuRei) {
-        const linhaBase = (cor === 'white') ? 1 : 8;
-        const torreMoveu = (cor === 'white') ? jaMoveuTorres.h1 : jaMoveuTorres.h8;
-        if (!torreMoveu) {
-            const posicoesEntre = [(cor === 'white') ? 'f1' : 'f8', (cor === 'white') ? 'g1' : 'g8'];
-            const casasLivres = posicoesEntre.every(pos => $('#' + pos).find('.piece').length === 0);
-            const casasSeguras = posicoesEntre.every(pos => !this.isSquareAttacked(pos, cor === 'white' ? 'black' : 'white'));
-            const reiCasaInicial = this.colunas[idxCol] + linha;
-            const reiCasaSegura = !this.isSquareAttacked(reiCasaInicial, cor === 'white' ? 'black' : 'white');
-            if (casasLivres && casasSeguras && reiCasaSegura) {
-                movimentos.push((cor === 'white') ? 'g1' : 'g8');
+            const novaPosicao = this.colunas[newIdxCol] + newLinha;
+            const $pecaDestino = $('#' + novaPosicao).find('.piece');
+
+            // Só adiciona se estiver vazio ou tiver peça inimiga
+            if ($pecaDestino.length === 0 || !$pecaDestino.attr('class').includes(cor)) {
+                movimentos.push(novaPosicao);
             }
         }
+
+        // *** LÓGICA DE VERIFICAÇÃO DE ROQUE ***
+        // Esta lógica usa o 'isSquareAttacked' e está correta dentro da sua arquitetura
+        if (!jaMoveuRei && (linha === (cor === 'white' ? 1 : 8))) {
+            const corOponente = cor === 'white' ? 'black' : 'white';
+            const casaRei = coluna + linha; // ex: 'e1' ou 'e8'
+
+            // VERIFICA ROQUE PEQUENO (lado do rei, O-O)
+            const torrePequeno = cor === 'white' ? 'h1' : 'h8';
+            if (!jaMoveuTorres[torrePequeno]) {
+                const casaF = (cor === 'white') ? 'f1' : 'f8';
+                const casaG = (cor === 'white') ? 'g1' : 'g8';
+
+                // Verifica se as casas estão vazias
+                if ($('#' + casaF).find('.piece').length === 0 &&
+                    $('#' + casaG).find('.piece').length === 0) {
+
+                    // Verifica se o rei não está em xeque E não passa por casas atacadas
+                    if (!this.isSquareAttacked(casaRei, corOponente) &&
+                        !this.isSquareAttacked(casaF, corOponente) &&
+                        !this.isSquareAttacked(casaG, corOponente)) {
+                        movimentos.push(casaG); // Destino do rei
+                    }
+                }
+            }
+
+            // VERIFICA ROQUE GRANDE (lado da dama, O-O-O)
+            const torreGrande = cor === 'white' ? 'a1' : 'a8';
+            if (!jaMoveuTorres[torreGrande]) {
+                const casaB = (cor === 'white') ? 'b1' : 'b8';
+                const casaC = (cor === 'white') ? 'c1' : 'c8';
+                const casaD = (cor === 'white') ? 'd1' : 'd8';
+
+                // Verifica se as casas estão vazias
+                if ($('#' + casaB).find('.piece').length === 0 &&
+                    $('#' + casaC).find('.piece').length === 0 &&
+                    $('#' + casaD).find('.piece').length === 0) {
+
+                    // Verifica se o rei não está em xeque E não passa por casas atacadas
+                    // Nota: b1/b8 não precisa ser verificado para ataque
+                    if (!this.isSquareAttacked(casaRei, corOponente) &&
+                        !this.isSquareAttacked(casaC, corOponente) && // Destino do rei
+                        !this.isSquareAttacked(casaD, corOponente)) { // Passagem do rei
+                        movimentos.push(casaC); // Destino do rei
+                    }
+                }
+            }
+        }
+
+        return movimentos;
     }
-    return movimentos;
-}
+    executarRoque(tipoRoque, cor) {
+        const linha = cor === 'white' ? '1' : '8';
+
+        if (tipoRoque === 'pequeno') {
+            // Roque pequeno: Rei e1→g1, Torre h1→f1 (branco) / Rei e8→g8, Torre h8→f8 (preto)
+            this._moverPecaRoque('e' + linha, 'g' + linha);
+            this._moverPecaRoque('h' + linha, 'f' + linha);
+            console.log(`♜ ROQUE PEQUENO executado para ${cor}`);
+        }
+        else if (tipoRoque === 'grande') {
+            // Roque grande: Rei e1→c1, Torre a1→d1 (branco) / Rei e8→c8, Torre a8→d8 (preto)
+            this._moverPecaRoque('e' + linha, 'c' + linha);
+            this._moverPecaRoque('a' + linha, 'd' + linha);
+            console.log(`♜ ROQUE GRANDE executado para ${cor}`);
+        }
+    }
+
+    /**
+     * Método auxiliar para mover peças durante o roque
+     */
+    _moverPecaRoque(origem, destino) {
+        const $peca = $('#' + origem).find('.piece');
+        if ($peca.length > 0) {
+            // Move a peça para o destino
+            $('#' + destino).html($peca.clone());
+            // Limpa a origem
+            $('#' + origem).empty();
+        }
+    }
 
 
 

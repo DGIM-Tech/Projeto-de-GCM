@@ -1,10 +1,8 @@
 // js/classes/Jogo.js
-
 import { Tabuleiro } from './Tabuleiro.js';
 import { Movimento } from './Movimento.js';
-import { Promocao } from './Promocao.js';
 import { Xeque } from './Xeque.js';
-import { XequeMate } from './XequeMate.js';
+
 
 export class Jogo {
     constructor(jogador1, jogador2) {
@@ -65,7 +63,45 @@ export class Jogo {
             timerProgressBar: true
         });
     }
+    _tentarMoverPeca(casaAlvo) {
+        if (this.clicou !== 1 && this.jogadorAtual.tipo === 'Humano') {
+            this._mostrarToast('Selecione uma peça para mover.', 'info');
+            return;
+        }
 
+        const casaDestinoId = casaAlvo.attr('id');
+        const isMovimentoValido = casaDestinoId !== this.ultimaCasa && casaAlvo.hasClass('possible');
+
+        if (!isMovimentoValido && this.jogadorAtual.tipo === 'Humano') {
+            console.log("Movimento inválido ou não é a vez do humano");
+            return;
+        }
+
+        const casaOrigemId = this.ultimaCasa;
+        const pecaMovida = this.pecaEscolhida;
+
+        console.log(`Tentando mover: ${casaOrigemId} → ${casaDestinoId}`);
+
+        // *** CORREÇÃO: Primeiro verifica se é roque, DEPOIS atualiza flags ***
+        const infoRoque = this._tratarRoque(pecaMovida, casaOrigemId, casaDestinoId);
+
+        // Executa o movimento do rei (e da torre, se for roque)
+        const pecaCapturada = this._executarMovimento(pecaMovida, casaOrigemId, casaDestinoId);
+
+        // *** CORREÇÃO: Só atualiza flags DEPOIS do movimento ***
+        this._atualizarFlagsDeRoque(pecaMovida, casaOrigemId);
+
+        // *** CORREÇÃO CRÍTICA AQUI ***
+        const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
+
+        if (isPromocao) {
+            console.log("Promoção detectada - pausando turno para escolha da peça");
+            return;
+        }
+
+        console.log("Sem promoção - finalizando turno normalmente");
+        this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
+    }
     _registrarEventos() {
         const self = this;
         $('body').off('click.jogo').on('click.jogo', '.piece', function (e) {
@@ -98,7 +134,7 @@ export class Jogo {
         this._mostrarMovimentosPossiveis(classe, casaId);
     }
 
-    _tentarMoverPeca(casaAlvo) {
+    __tentarMoverPeca(casaAlvo) {
         if (this.clicou !== 1 && this.jogadorAtual.tipo === 'Humano') {
             this._mostrarToast('Selecione uma peça para mover.', 'info');
             return;
@@ -117,23 +153,23 @@ export class Jogo {
 
         console.log(`Tentando mover: ${casaOrigemId} → ${casaDestinoId}`);
 
-        this._atualizarFlagsDeRoque(pecaMovida, casaOrigemId);
-
-        // Executa o movimento primeiro
-        const pecaCapturada = this._executarMovimento(pecaMovida, casaOrigemId, casaDestinoId);
+        // *** CORREÇÃO: Primeiro verifica se é roque, DEPOIS atualiza flags ***
         const infoRoque = this._tratarRoque(pecaMovida, casaOrigemId, casaDestinoId);
 
+        // Executa o movimento do rei (e da torre, se for roque)
+        const pecaCapturada = this._executarMovimento(pecaMovida, casaOrigemId, casaDestinoId);
+
+        // *** CORREÇÃO: Só atualiza flags DEPOIS do movimento ***
+        this._atualizarFlagsDeRoque(pecaMovida, casaOrigemId);
+
         // *** CORREÇÃO CRÍTICA AQUI ***
-        // Precisamos passar as informações do movimento para salvar o estado
         const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
 
         if (isPromocao) {
             console.log("Promoção detectada - pausando turno para escolha da peça");
-            // PAUSA O JOGO: O 'return' impede que 'finalizarTurno' seja chamado
             return;
         }
 
-        // Se não é promoção, finaliza o turno normalmente
         console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
@@ -327,17 +363,42 @@ export class Jogo {
     }
 
     _atualizarFlagsDeRoque(peca, origem) {
-        const cor = peca.hasClass('white') ? 'white' : 'black';
-        if (peca.hasClass('king')) {
-            if (cor === 'white') this.whiteKingMoved = true;
-            else this.blackKingMoved = true;
-        } else if (peca.hasClass('rook')) {
+        // Obter a string completa de classes
+        const pecaClasses = peca.attr('class');
+        if (!pecaClasses) return; // Segurança, caso a peça não tenha classe
+
+        const cor = pecaClasses.includes('white') ? 'white' : 'black';
+
+        // *** CORREÇÃO: Usar includes() para 'king' e 'rook' ***
+        // A verificação anterior (peca.hasClass('king')) falhava.
+
+        if (pecaClasses.includes('king')) {
+            console.log(`♔ FLAG DE ROQUE: Rei ${cor} moveu-se. Roque desabilitado.`);
             if (cor === 'white') {
-                if (origem === 'a1') this.whiteRooksMoved.a1 = true;
-                if (origem === 'h1') this.whiteRooksMoved.h1 = true;
+                this.whiteKingMoved = true;
             } else {
-                if (origem === 'a8') this.blackRooksMoved.a8 = true;
-                if (origem === 'h8') this.blackRooksMoved.h8 = true;
+                this.blackKingMoved = true;
+            }
+        }
+        else if (pecaClasses.includes('rook')) {
+            if (cor === 'white') {
+                if (origem === 'a1') {
+                    this.whiteRooksMoved.a1 = true;
+                    console.log(`♜ FLAG DE ROQUE: Torre branca 'a1' moveu-se.`);
+                }
+                if (origem === 'h1') {
+                    this.whiteRooksMoved.h1 = true;
+                    console.log(`♜ FLAG DE ROQUE: Torre branca 'h1' moveu-se.`);
+                }
+            } else { // 'black'
+                if (origem === 'a8') {
+                    this.blackRooksMoved.a8 = true;
+                    console.log(`♜ FLAG DE ROQUE: Torre preta 'a8' moveu-se.`);
+                }
+                if (origem === 'h8') {
+                    this.blackRooksMoved.h8 = true;
+                    console.log(`♜ FLAG DE ROQUE: Torre preta 'h8' moveu-se.`);
+                }
             }
         }
     }
@@ -568,15 +629,96 @@ export class Jogo {
     }
 
     _tratarRoque(peca, origem, destino) {
-        if (!peca.hasClass('king')) return { isRoquePequeno: false, isRoqueGrande: false };
-        const origemCol = origem[0]; const destinoCol = destino[0]; const linha = origem[1];
-        let isRoquePequeno = false, isRoqueGrande = false;
-        if (origemCol === 'e' && destinoCol === 'g') {
-            const torre = $('#h' + linha).find('.piece'); $('#f' + linha).html(torre); isRoquePequeno = true;
-        } else if (origemCol === 'e' && destinoCol === 'c') {
-            const torre = $('#a' + linha).find('.piece'); $('#d' + linha).html(torre); isRoqueGrande = true;
+        console.log("♜🟢 MÉTODO _tratarRoque INICIADO!");
+
+        // *** CORREÇÃO 1: Obter a string de classes ***
+        const pecaClasses = peca.attr('class');
+
+        console.log("♜ Peça:", pecaClasses);
+        console.log("♜ Origem:", origem, "Destino:", destino);
+
+        // *** CORREÇÃO 2: A verificação estava errada ***
+        // A classe da peça é 'king-white' ou 'king-black', não 'king'.
+        // Devemos verificar se a string de classes *inclui* 'king'.
+        if (!pecaClasses || !pecaClasses.includes('king')) {
+            console.log("♜❌ Não é rei, retornando false");
+            return { isRoquePequeno: false, isRoqueGrande: false };
         }
+
+        const origemCol = origem[0];
+        const destinoCol = destino[0];
+        const linha = origem[1]; // '1' ou '8'
+        const cor = this.vezDo;
+
+        let isRoquePequeno = false, isRoqueGrande = false;
+
+        console.log(`♜ Verificando roque: ${origem} → ${destino}, linha: ${linha}, cor: ${cor}`);
+
+        // Verifica roque pequeno (e→g)
+        if (origemCol === 'e' && destinoCol === 'g' &&
+            ((cor === 'white' && linha === '1') || (cor === 'black' && linha === '8'))) {
+
+            console.log("♜🟡 ROQUE PEQUENO detectado!");
+            const torreOrigem = (cor === 'white') ? 'h1' : 'h8';
+            const $torre = $('#' + torreOrigem).find('.piece');
+
+            // Verificação mais segura (rook da cor certa)
+            if ($torre.length > 0 && $torre.hasClass('rook-' + cor)) {
+                const torreDestino = (cor === 'white') ? 'f1' : 'f8';
+                console.log(`♜ Movendo torre (pequeno): ${torreOrigem} → ${torreDestino}`);
+                this._executarMovimentoRoque(torreOrigem, torreDestino); //
+                isRoquePequeno = true;
+            } else {
+                console.log("♜❌ Roque pequeno IMPOSSÍVEL - torre não encontrada ou não é rook");
+            }
+        }
+
+        // Verifica roque grande (e→c)
+        else if (origemCol === 'e' && destinoCol === 'c' &&
+            ((cor === 'white' && linha === '1') || (cor === 'black' && linha === '8'))) {
+
+            console.log("♜🟡 ROQUE GRANDE detectado!");
+            const torreOrigem = (cor === 'white') ? 'a1' : 'a8';
+            const $torre = $('#' + torreOrigem).find('.piece');
+
+            // Verificação mais segura (rook da cor certa)
+            if ($torre.length > 0 && $torre.hasClass('rook-' + cor)) {
+                const torreDestino = (cor === 'white') ? 'd1' : 'd8';
+                console.log(`♜ Movendo torre (grande): ${torreOrigem} → ${torreDestino}`);
+                this._executarMovimentoRoque(torreOrigem, torreDestino); //
+                isRoqueGrande = true;
+            } else {
+                console.log("♜❌ Roque grande IMPOSSÍVEL - torre não encontrada ou não é rook");
+            }
+        }
+
+        console.log("♜🔚 MÉTODO _tratarRoque FINALIZADO!");
         return { isRoquePequeno, isRoqueGrande };
+    }
+
+    /**
+     * Método auxiliar para mover a torre durante o roque
+     * (Este método já estava correto no seu arquivo, incluído para completude)
+     */
+    _executarMovimentoRoque(torreOrigem, torreDestino) {
+        console.log(`♜🔄 _executarMovimentoRoque CHAMADO: ${torreOrigem} → ${torreDestino}`);
+
+        const $torre = $('#' + torreOrigem).find('.piece');
+        console.log(`♜ Torre em ${torreOrigem}:`, $torre.length > 0 ? "ENCONTRADA" : "NÃO ENCONTRADA");
+
+        if ($torre.length > 0) {
+            console.log(`♜ Classe da torre:`, $torre.attr('class'));
+            console.log(`♜ Movendo torre: ${torreOrigem} → ${torreDestino}`);
+
+            // Move a torre para o destino
+            $('#' + torreDestino).html($torre.clone());
+            // Limpa a origem
+            $('#' + torreOrigem).empty();
+
+            console.log(`♜✅ Torre movida com sucesso!`);
+        } else {
+            console.error(`♜❌ ERRO: Torre não encontrada em ${torreOrigem}`);
+        }
     }
     promocaoConcluida(tipoPecaEscolhida) {
         if (!this.movimentoPendente) {
