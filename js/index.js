@@ -11,6 +11,10 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     $('.board').empty();
     $('.stats .notation').empty();
 
+    //limpa as peças capturadas
+    $('.capturadas-brancas').empty();
+    $('.capturadas-pretas').empty();
+
     let jogador1, jogador2;
 
     if (modo === 'amigo') {
@@ -145,10 +149,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Botões de controle ---
     document.getElementById('btnDesistir').addEventListener('click', () => {
-        finalizarPartida('Você desistiu da partida.');
+        if (!window.jogoAtual) {
+            Swal.fire('Atenção', 'Nenhum jogo em andamento!', 'warning');
+            return;
+        }
+
+        const desistente = window.jogoAtual.jogadorAtual;
+        const corDesistente = desistente.cor.toLowerCase(); // "brancas" ou "pretas"
+        const vencedor = (corDesistente === 'brancas') ? 'Pretas' : 'Brancas';
+
+        // Mensagem enxuta e natural
+        const mensagem = `As ${corDesistente.charAt(0).toUpperCase() + corDesistente.slice(1)} desistiram da partida. As ${vencedor} venceram!`;
+
+        finalizarPartida(mensagem, "warning");
     });
     document.getElementById('btnEmpate').addEventListener('click', () => {
-        finalizarPartida('A partida terminou em empate.');
+        if (!window.jogoAtual) {
+            Swal.fire('Atenção', 'Nenhum jogo em andamento!', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Você aceita o empate?',
+            text: 'Se aceitar, a partida será encerrada. Caso contrário, ela continuará normalmente.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim',
+            cancelButtonText: 'Não'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                finalizarPartida('A partida terminou em empate.', 'info');
+            } else {
+                Swal.fire({
+                    title: 'Empate recusado',
+                    text: 'A partida continuará normalmente.',
+                    icon: 'info',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
     });
     document.getElementById('btnReiniciar').addEventListener('click', () => {
         reiniciarPartida();
