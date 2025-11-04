@@ -46,9 +46,9 @@ function iniciarNovaPartida(modo, opcoes = {}) {
 }
 
 /** Reinicia a partida */
-export function reiniciarPartida() {
-    if (window.ultimaConfiguracao && window.ultimaConfiguracao.modo) {
-        iniciarNovaPartida(window.ultimaConfiguracao.modo, window.ultimaConfiguracao.opcoes);
+function reiniciarPartida() {
+    if (ultimaConfiguracao.modo) {
+        iniciarNovaPartida(ultimaConfiguracao.modo, ultimaConfiguracao.opcoes);
     } else {
         Swal.fire('Atenção', 'Nenhum jogo para reiniciar!', 'warning');
     }
