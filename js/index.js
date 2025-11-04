@@ -190,7 +190,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-    document.getElementById('btnReiniciar').addEventListener('click', () => {
-        reiniciarPartida();
+    document.getElementById('btnVoltarMenu').addEventListener('click', () => {
+        Swal.fire({
+            title: 'Voltar à tela inicial?',
+            text: 'A partida atual será encerrada.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sim',
+            cancelButtonText: 'Não'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Remove qualquer estado de jogo salvo
+                localStorage.removeItem('estadoJogo');
+
+                // Esconde o tabuleiro e mostra a tela inicial
+                document.querySelector('.box').classList.remove('ativo');
+                document.querySelector('.controles').classList.remove('ativo');
+                document.getElementById('telaInicial').style.display = 'flex';
+
+                // Limpa o tabuleiro e estatísticas
+                $('.board').empty();
+                $('.stats .notation').empty();
+                $('.capturadas-brancas').empty();
+                $('.capturadas-pretas').empty();
+
+                // Reseta a variável de jogo
+                window.jogoAtual = null;
+            }
+        });
     });
 });
