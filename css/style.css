@@ -436,6 +436,12 @@ body {
 	background: rgba(0, 0, 0, 0.7);
 	z-index: 9998;
 }
+.swal-xeque-mate {
+  font-size: 1.2rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+}
 
 .player {
 	width: 100%;

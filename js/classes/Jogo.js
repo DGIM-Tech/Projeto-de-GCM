@@ -271,13 +271,22 @@ export class Jogo {
             title: 'Xeque-Mate!',
             text: `As ${vencedor} venceram a partida!`,
             icon: 'success',
-            confirmButtonText: 'Jogar Novamente'
+            confirmButtonText: 'Jogar Novamente',
+            backdrop: false, // remove o fundo escuro
+            position: 'top-end', // canto superior direito
+            toast: true, // estilo notificação
+            timer: 10000, // fecha automaticamente em 10s
+            timerProgressBar: true,
+            customClass: {
+                popup: 'swal-xeque-mate'
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.reload();
             }
         });
     }
+
     _verificarMovimentosLegais(cor) {
         console.log(`=== INICIANDO VERIFICAÇÃO DE MOVIMENTOS LEGAIS PARA ${cor} ===`);
 
