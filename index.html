@@ -5,7 +5,9 @@
     <title>Xadrez com IA</title>
     <link href="css/style.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <style>
+        /* Tela inicial (mantém seu estilo) */
         .tela-inicial {
             position: fixed; inset: 0; background: #0E7886;
             display: flex; flex-direction: column; justify-content: center;
@@ -32,16 +34,114 @@
         .btn-controle:hover { opacity: 0.85; }
 
         .swal2-html-container h3 { margin-top: 15px; margin-bottom: 8px; }
+
+        /* === MENU LATERAL PARA CELULARES === */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 3000;
+            background: #0E7886;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .menu-lateral {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 80%;
+            max-width: 320px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -3px 0 10px rgba(0,0,0,0.3);
+            z-index: 2500;
+            padding: 20px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .menu-lateral.ativo {
+            display: block;
+            transform: translateX(0);
+        }
+
+        .close-menu {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #B20E0E;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .menu-content h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #0E7886;
+        }
+
+        .menu-content .notation,
+        .menu-content .capturadas {
+            margin-bottom: 20px;
+        }
+
+        /* Ocultar stats normais no celular */
+        @media (max-width: 768px) {
+            .stats { display: none; }
+            .menu-toggle { display: block; }
+        }
     </style>
 </head>
 
 <body>
+    <!-- Botão do menu lateral (visível só no celular) -->
+    <button id="menuToggle" class="menu-toggle">☰</button>
+
+    <!-- Painel lateral para celular -->
+    <div id="menuLateral" class="menu-lateral">
+        <button id="closeMenu" class="close-menu">✕</button>
+        <div class="menu-content">
+            <div class="capturadas">
+                <h3>Peças Capturadas</h3>
+                <div class="secao-capturas">
+                    <h4>Capturas pretas</h4>
+                    <div class="area-capturas capturadas-brancas"></div>
+                </div>
+                <div class="secao-capturas">
+                    <h4>Capturas brancas</h4>
+                    <div class="area-capturas capturadas-pretas"></div>
+                </div>
+            </div>
+
+            <div class="notation">
+                <h3>Histórico de Jogadas</h3>
+                <div class="notation-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela inicial -->
     <div class="tela-inicial" id="telaInicial">
         <h1>Jogo de Xadrez</h1>
         <button id="btnAmigo">Jogar contra um amigo</button>
         <button id="btnComputador">Jogar contra o computador</button>
     </div>
 
+    <!-- Área principal -->
     <div class="box">
         <div class="stats">
             <div class="capturadas">
@@ -68,10 +168,14 @@
         </div>
 
         <div class="stats">
-            <div class="notation"></div>
+            <div class="notation">
+                <h3>Histórico de Jogadas</h3>
+                <div class="notation-content"></div>
+            </div>
         </div>
     </div>
 
+    <!-- Controles -->
     <div class="controles">
         <button id="btnDesistir" class="btn-controle vermelho">Desistir</button>
         <button id="btnEmpate" class="btn-controle cinza">Pedir Empate</button>
@@ -93,5 +197,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script type="module" src="js/index.js"></script>
     <script src="js/classes/Jogo.js"></script>
+
+    <!-- Script para abrir/fechar o menu -->
+    <script>
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('menuLateral').classList.add('ativo');
+        });
+
+        document.getElementById('closeMenu').addEventListener('click', () => {
+            document.getElementById('menuLateral').classList.remove('ativo');
+        });
+    </script>
 </body>
 </html>
