@@ -3,20 +3,10 @@
   "version": "1.0.0",
   "description": "<h1 align=\"center\">Xadrez Web ♟️</h1>",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "jest --watchAll"
+    "test": "jest"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DGIM-Tech/Projeto-de-GCM.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/DGIM-Tech/Projeto-de-GCM/issues"
-  },
-  "homepage": "https://github.com/DGIM-Tech/Projeto-de-GCM#readme",
   "devDependencies": {
     "@babel/core": "^7.28.5",
     "@babel/preset-env": "^7.28.5",
