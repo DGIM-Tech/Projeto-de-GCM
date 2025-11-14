@@ -1,21 +1,26 @@
 // js/classes/Tutorial.js
 export class Tutorial {
     constructor(jogo) {
-        this.jogo = jogo; // referência ao objeto Jogo
-        this.passos = []; // lista de passos do tutorial
+        this.jogo = jogo;
+        this.passos = [];
         this.passosAtuais = 0;
-        this.pecaSelecionada = null; // Rastreia a peça clicada
+        this.pecaSelecionada = null;
     }
 
     iniciar() {
-        this.mostrarPasso(); // inicia o tutorial
+        console.log("Tutorial iniciado. Desabilitando eventos de jogo...");
+        $('body').off('click.jogo click.quadrado');
+        this.mostrarPasso();
     }
 
     mostrarPasso() {
         if (this.passosAtuais >= this.passos.length) {
             Swal.fire('Tutorial Concluído', 'Você aprendeu o básico de todas as peças!', 'success');
-            // Limpa o último listener
             $('body').off('click.tutorial');
+            console.log("Tutorial concluído. Reabilitando eventos de jogo...");
+            if (typeof this.jogo._registrarEventos === 'function') {
+                this.jogo._registrarEventos();
+            }
             return;
         }
 
@@ -30,7 +35,7 @@ export class Tutorial {
             allowEscapeKey: false
         }).then(() => {
             if (passo.acao) {
-                passo.acao(); // espera ação do usuário
+                passo.acao();
             } else {
                 this.passosAtuais++;
                 this.mostrarPasso();
@@ -38,55 +43,80 @@ export class Tutorial {
         });
     }
 
-    esperarSelecaoPeca(tipo, cor) {
+    /**
+     * Espera o usuário selecionar uma peça específica.
+     */
+    esperarSelecaoPeca(tipo, cor, casaEspecifica = null) {
         const self = this;
         $('.piece.tutorial-highlight').removeClass('tutorial-highlight');
-        
-        // Destaca apenas as peças relevantes para o tutorial
-        if (tipo === 'pawn' && cor === 'white') {
-             $('#e2 .piece.pawn.white').addClass('tutorial-highlight');
-             $('#a2 .piece.pawn.white').addClass('tutorial-highlight');
-        } else {
-            $(`.piece.${tipo}.${cor}`).addClass('tutorial-highlight');
+
+        // Define seletor e descrição dependendo se é uma casa específica ou qualquer peça do tipo
+        const seletorPeca = casaEspecifica
+            ? `#${casaEspecifica} .piece.${tipo}-${cor}`
+            : `.piece.${tipo}-${cor}`;
+        const seletorDesc = casaEspecifica
+            ? `${tipo}-${cor} em ${casaEspecifica}`
+            : `${tipo}-${cor}`;
+
+        const $pecas = $(seletorPeca);
+
+        if ($pecas.length === 0) {
+            console.error(`Tutorial: Nenhuma peça encontrada com o seletor: ${seletorPeca}`);
         }
 
-        // ATUALIZAÇÃO: Adicionado 'e' (evento)
-        $('body').off('click.tutorial').on('click.tutorial', '.square-board', function (e) {
-            const casaClicada = $(this);
-            const peca = casaClicada.find('.piece');
+        // 🔹 Se for qualquer peça, destaca só a primeira (pra não poluir visualmente)
+        if (!casaEspecifica && $pecas.length > 1) {
+            $pecas.removeClass('tutorial-highlight');
+            $pecas.eq(0).addClass('tutorial-highlight');
+        } else {
+            $pecas.addClass('tutorial-highlight');
+        }
 
-            if (!peca.length) {
-                return; 
-            }
+        console.log(`Tutorial: Esperando clique em ${seletorDesc}`);
 
-            if (!peca.hasClass(tipo) || !peca.hasClass(cor)) {
-                Swal.fire('Peça Errada', `Por favor, selecione um ${tipo} da cor ${cor} (peças destacadas).`, 'warning');
-                return;
-            }
+        // Remove eventos antigos
+        $('body').off('click.tutorial click.jogo click.quadrado');
 
-            $('.piece.tutorial-highlight').removeClass('tutorial-highlight');
-
-            const posicao = casaClicada.attr('id'); 
-            
-            self.pecaSelecionada = posicao; 
-            self.jogo.mostrarMovimentosPossiveis(posicao);
-
-            $('body').off('click.tutorial'); 
-
-            self.passosAtuais++;
-            self.mostrarPasso();
-
-            // ATUALIZAÇÃO: Impede o clique de vazar para o Jogo.js
+        // Ativa evento só para o tutorial
+        $('body').on('click.tutorial', '.piece', function (e) {
             e.stopPropagation();
-            return false;
+            const $pecaClicada = $(this);
+            const casaClicada = $pecaClicada.parent().attr('id');
+
+            const ehPecaCerta = casaEspecifica
+                ? casaClicada === casaEspecifica && $pecaClicada.is(`.piece.${tipo}-${cor}`)
+                : $pecaClicada.is(`.piece.${tipo}-${cor}`);
+
+            if (ehPecaCerta) {
+                console.log(`✅ Tutorial: Peça correta selecionada (${casaClicada}).`);
+                self.pecaSelecionada = casaClicada;
+
+                // Remove destaque e evento
+                $('.piece.tutorial-highlight').removeClass('tutorial-highlight');
+                $('body').off('click.tutorial');
+
+                // Passa para o próximo passo
+                self.passosAtuais++;
+                self.mostrarPasso();
+            } else {
+                console.warn(`❌ Peça errada clicada (${casaClicada}).`);
+                Swal.fire(
+                    'Peça Errada',
+                    `Por favor, selecione o ${tipo} ${cor}${casaEspecifica ? ' em ' + casaEspecifica : ''}.`,
+                    'warning'
+                );
+            }
         });
     }
 
+    /**
+     * Espera o usuário mover a peça selecionada para uma casa válida.
+     */
     esperarMovimento(casasValidas) {
         const self = this;
 
         if (!self.pecaSelecionada) {
-            console.error("Erro de Tutorial: esperarMovimento foi chamado sem uma pecaSelecionada.");
+            console.error("Erro: esperarMovimento sem pecaSelecionada.");
             self.passosAtuais--;
             self.mostrarPasso();
             return;
@@ -94,33 +124,41 @@ export class Tutorial {
 
         $('.square-board.tutorial-highlight').removeClass('tutorial-highlight');
         casasValidas.forEach(casa => $(`#${casa}`).addClass('tutorial-highlight'));
+        console.log(`Tutorial: Esperando movimento para ${casasValidas.join(', ')}`);
 
-        // ATUALIZAÇÃO: Adicionado 'e' (evento)
-        $('body').off('click.tutorial').on('click.tutorial', '.square-board', function (e) {
+        $('body').off('click.tutorial click.jogo click.quadrado');
+
+        $('body').on('click.tutorial', '.square-board', function (e) {
+            e.stopPropagation();
             const casaDestino = $(this).attr('id');
-            
+
             if (!casasValidas.includes(casaDestino)) {
                 Swal.fire('Movimento Inválido', `Selecione uma das casas destacadas: ${casasValidas.join(', ')}`, 'warning');
                 return;
             }
 
+            console.log(`Tutorial: Movimento correto para ${casaDestino}`);
+
             $('.square-board.tutorial-highlight').removeClass('tutorial-highlight');
-
-            // --- ESTA É A CORREÇÃO PRINCIPAL ---
-            // A função correta está no objeto 'movimento' dentro do 'jogo'.
-            self.jogo.movimento.moverPeca(self.pecaSelecionada, casaDestino);
-            
-            self.pecaSelecionada = null; 
-            self.jogo.limparMovimentosPossiveis(); 
-
             $('body').off('click.tutorial');
 
+            try {
+                self.jogo.movimento.moverPeca(self.pecaSelecionada, casaDestino);
+                if (typeof self.jogo.limparMovimentosPossiveis === 'function') {
+                    self.jogo.limparMovimentosPossiveis();
+                }
+            } catch (error) {
+                console.error("Erro ao mover peça via lógica do jogo.", error);
+                const $peca = $('#' + self.pecaSelecionada).find('.piece');
+                if ($peca.length > 0) {
+                    $('#' + casaDestino).html($peca.clone());
+                    $('#' + self.pecaSelecionada).empty();
+                }
+            }
+
+            self.pecaSelecionada = null;
             self.passosAtuais++;
             self.mostrarPasso();
-
-            // ATUALIZAÇÃO: Impede o clique de vazar para o Jogo.js
-            e.stopPropagation();
-            return false;
         });
     }
 }

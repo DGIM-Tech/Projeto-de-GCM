@@ -448,3 +448,9 @@ body {
 	height: 40px;
 	background: linear-gradient(to bottom, #fff, #eee 130%);
 }
+
+/* Destaque visual do tutorial */
+.tutorial-highlight {
+    box-shadow: 0 0 15px 5px yellow;
+    border-radius: 50%;
+    transition: 0.3s;

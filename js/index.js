@@ -19,7 +19,7 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     if (modo === 'amigo') {
         jogador1 = new Jogador('Jogador 1', 'brancas');
         jogador2 = new Jogador('Jogador 2', 'pretas');
-    } 
+    }
     else if (modo === 'computador') {
         const { nivelDificuldade, corJogador } = opcoes;
         if (corJogador === 'brancas') {
@@ -29,12 +29,12 @@ function iniciarNovaPartida(modo, opcoes = {}) {
             jogador1 = new JogadorIA('brancas', nivelDificuldade);
             jogador2 = new Jogador('Você', 'pretas');
         }
-    } 
+    }
     else if (modo === 'restaurar' && opcoes.estado) {
         jogoAtual = new Jogo();
         jogoAtual.carregarEstado(opcoes.estado);
         return;
-    } 
+    }
     else if (modo === 'tutorial') {
         // No modo tutorial, a IA não deve jogar
         jogador1 = new Jogador('Você', 'brancas');
@@ -42,10 +42,10 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     }
 
     jogoAtual = new Jogo(jogador1, jogador2);
-    
+
     if (modo === 'tutorial') {
         jogoAtual.jogadorAtual = jogador1; // Garante que é sempre sua vez
-        jogoAtual.trocarTurno = () => {}; // Desativa a troca de turno
+        jogoAtual.trocarTurno = () => { }; // Desativa a troca de turno
     }
 
     window.jogoAtual = jogoAtual;
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-    
+
     // 🔹 Botão Tutorial
     document.getElementById('btnTutorial').addEventListener('click', () => {
         iniciarModoTutorial();
@@ -181,76 +181,131 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- FUNÇÃO TUTORIAL ATUALIZADA ---
-    function iniciarModoTutorial() {
-        mostrarInterfaceJogo();
-        iniciarNovaPartida('tutorial'); // Começa um jogo travado para o tutorial
+// --- FUNÇÃO TUTORIAL ATUALIZADA E APRIMORADA ---
+function iniciarModoTutorial() {
+    mostrarInterfaceJogo();
+    iniciarNovaPartida('tutorial'); // Modo tutorial = jogo travado
 
-        const tutorial = new Tutorial(jogoAtual);
+    const tutorial = new Tutorial(jogoAtual);
 
-        // Lista de passos muito mais completa
-        tutorial.passos = [
-            // 1. Introdução
-            { mensagem: "Bem-vindo ao tutorial de Xadrez! Vamos aprender como cada peça se move. Começaremos com o PEÃO.", acao: null },
-            
-            // 2. Peão (Pawn)
-            { mensagem: "O PEÃO só anda para frente. Na sua primeira jogada, ele pode andar 1 ou 2 casas. Clique no peão da casa 'e2'.", 
-              acao: () => tutorial.esperarSelecaoPeca('pawn', 'white') },
-            
-            { mensagem: "Ótimo! Veja as casas 'e3' e 'e4' destacadas. Mova o peão para 'e4' (2 casas).", 
-              acao: () => tutorial.esperarMovimento(['e4']) }, // Usuário move e2->e4
-            
-            // 3. Cavalo (Knight)
-            { mensagem: "Excelente! Agora o CAVALO. Ele se move em 'L' (2 casas em uma direção e 1 para o lado) e pode pular outras peças. Clique no cavalo em 'g1'.", 
-              acao: () => tutorial.esperarSelecaoPeca('knight', 'white') },
-            
-            { mensagem: "Perfeito! Mova o cavalo para 'f3'.", 
-              acao: () => tutorial.esperarMovimento(['f3']) }, // Move g1->f3
+    tutorial.passos = [
+        // 1. Introdução
+        {
+            mensagem: "🎓 Bem-vindo ao tutorial de Xadrez! Vamos aprender como cada peça se move. Começaremos com o PEÃO.",
+            acao: null
+        },
 
-            // 4. Bispo (Bishop)
-            { mensagem: "Agora o BISPO. Ele se move na diagonal, quantas casas quiser, mas não pode pular peças. Clique no bispo em 'f1'.", 
-              acao: () => tutorial.esperarSelecaoPeca('bishop', 'white') },
-            
-            { mensagem: "Note que o peão em 'e2' não está mais lá, então o caminho está livre! Mova o bispo para 'c4'.", 
-              acao: () => tutorial.esperarMovimento(['c4']) }, // Move f1->c4
+        // 2. Peão (Pawn)
+        {
+            mensagem: "O PEÃO só anda para frente. Na primeira jogada, ele pode andar 1 ou 2 casas. Clique no peão da casa 'e2'.",
+            acao: () => tutorial.esperarSelecaoPeca('pawn', 'white', 'e2')
+        },
+        {
+            mensagem: "Ótimo! Veja as casas 'e3' e 'e4' destacadas. Mova o peão para 'e4' (2 casas).",
+            acao: () => tutorial.esperarMovimento(['e4'])
+        },
 
-            // 5. Dama (Queen)
-            { mensagem: "Esta é a DAMA (ou Rainha), a peça mais poderosa! Ela se move como a TORRE (reto) e o BISPO (diagonal) juntos. Clique na Dama em 'd1'.", 
-              acao: () => tutorial.esperarSelecaoPeca('queen', 'white') },
-            
-            { mensagem: "Veja quantos movimentos! Ela pode ir para 'f3' ou 'g4' ou 'h5' na diagonal. Mova-a para 'h5'.", 
-              acao: () => tutorial.esperarMovimento(['f3', 'g4', 'h5', 'e2', 'd2', 'd3']) }, // Permite vários movimentos legais
+        // 3. Cavalo (Knight)
+        {
+            mensagem: "Excelente! Agora o CAVALO. Ele se move em 'L' (2 casas em uma direção e 1 para o lado) e pode pular outras peças. Clique no cavalo em 'g1'.",
+            acao: () => tutorial.esperarSelecaoPeca('knight', 'white', 'g1')
+        },
+        {
+            mensagem: "Perfeito! Mova o cavalo para 'f3'.",
+            acao: () => tutorial.esperarMovimento(['f3'])
+        },
 
-            // 6. Rei (King)
-            { mensagem: "Este é o REI, a peça mais importante. Ele só pode andar 1 casa em qualquer direção. Clique no Rei em 'e1'.", 
-              acao: () => tutorial.esperarSelecaoPeca('king', 'white') },
-            
-            { mensagem: "O Rei está um pouco preso agora, pois suas peças estão no caminho. Mova-o para 'e2'.", 
-              acao: () => tutorial.esperarMovimento(['e2']) }, // Move e1->e2
+        // 4. Bispo (Bishop)
+        {
+            mensagem: "Agora o BISPO. Ele se move na diagonal, quantas casas quiser, mas não pode pular peças. Clique no bispo em 'f1'.",
+            acao: () => tutorial.esperarSelecaoPeca('bishop', 'white', 'f1')
+        },
+        {
+            mensagem: "Note que o peão em 'e2' não está mais lá, então o caminho está livre! Mova o bispo para 'c4'.",
+            acao: () => tutorial.esperarMovimento(['c4'])
+        },
 
-            // 7. Torre (Rook)
-            { mensagem: "Finalmente, a TORRE. Ela anda reto (horizontal ou vertical), quantas casas quiser. A torre em 'h1' está presa, mas a torre em 'a1' não. Clique nela.", 
-              acao: () => tutorial.esperarSelecaoPeca('rook', 'white') },
-            
-            { mensagem: "O caminho está bloqueado pelo peão 'a2'. Teremos que mover o peão 'a2' primeiro. Clique no peão 'a2'.",
-              acao: () => tutorial.esperarSelecaoPeca('pawn', 'white') },
+        // 5. Dama (Queen)
+        {
+            mensagem: "Esta é a DAMA (ou Rainha), a peça mais poderosa! Ela se move como a TORRE e o BISPO juntos, mas não pode pular outras peças. Clique na Dama em 'd1'.",
+            acao: () => tutorial.esperarSelecaoPeca('queen', 'white', 'd1')
+        },
+        {
+            mensagem: "As casas livres são 'e2', 'f3', 'g4' e 'h5'. Mova a Dama para 'h5'.",
+            acao: () => tutorial.esperarMovimento(['e2', 'f3', 'g4', 'h5'])
+        },
 
-            { mensagem: "Mova o peão 'a2' para 'a3' para abrir caminho para a torre.",
-              acao: () => tutorial.esperarMovimento(['a3', 'a4']) },
-            
-            { mensagem: "Agora sim! Clique na torre em 'a1' novamente.",
-              acao: () => tutorial.esperarSelecaoPeca('rook', 'white') },
+        // 6. Torre (Rook)
+        {
+            mensagem: "Agora vamos ver a TORRE. Ela anda reto — horizontal ou vertical — quantas casas quiser. Clique na torre em 'a1'.",
+            acao: () => tutorial.esperarSelecaoPeca('rook', 'white', 'a1')
+        },
+        {
+            mensagem: "O caminho está bloqueado pelo peão 'a2'. Vamos movê-lo primeiro. Clique no peão 'a2'.",
+            acao: () => tutorial.esperarSelecaoPeca('pawn', 'white', 'a2')
+        },
+        {
+            mensagem: "Mova o peão 'a2' para 'a3' para liberar caminho para a torre.",
+            acao: () => tutorial.esperarMovimento(['a3', 'a4'])
+        },
+        {
+            mensagem: "Perfeito! Clique na torre em 'a1' novamente.",
+            acao: () => tutorial.esperarSelecaoPeca('rook', 'white', 'a1')
+        },
+        {
+            mensagem: "Veja, agora ela pode se mover! Mova a torre para 'a3'.",
+            acao: () => tutorial.esperarMovimento(['a3'])
+        },
 
-            { mensagem: "Veja, agora ela pode se mover! Mova a torre para 'a2'.",
-              acao: () => tutorial.esperarMovimento(['a2']) },
+        // 7. Rei (King)
+        {
+            mensagem: "Agora o REI 👑 — a peça mais importante! Ele só pode andar 1 casa em qualquer direção. Clique no Rei em 'e1'.",
+            acao: () => tutorial.esperarSelecaoPeca('king', 'white', 'e1')
+        },
+        {
+            mensagem: "O Rei pode ir para casas vizinhas. Mova-o para 'e2'.",
+            acao: () => tutorial.esperarMovimento(['e2'])
+        },
 
-            // 8. Conclusão
-            { mensagem: "O objetivo do jogo é atacar o Rei do oponente ('XEQUE') de forma que ele não possa escapar ('XEQUE-MATE').", 
-              acao: null },
-            { mensagem: "Você aprendeu o básico de todas as peças! O resto é prática e estratégia. Bom jogo!", 
-              acao: null }
-        ];
+        // 8. Roque (Castling)
+        {
+            mensagem: "Excelente! Existe um movimento especial chamado *Roque*. Ele protege o Rei movendo-o junto com a Torre. Vamos fazer o Roque pequeno.",
+            acao: null
+        },
+        {
+            mensagem: "Clique no Rei em 'e1' novamente para iniciar o Roque.",
+            acao: () => tutorial.esperarSelecaoPeca('king', 'white', 'e1')
+        },
+        {
+            mensagem: "Agora mova o Rei duas casas para o lado — até 'g1'.",
+            acao: () => tutorial.esperarMovimento(['g1'])
+        },
+        {
+            mensagem: "Perfeito! A Torre de 'h1' pula automaticamente para 'f1'.",
+            acao: () => {
+                const $rei = $('#e1 .piece.king-white');
+                const $torre = $('#h1 .piece.rook-white');
+                if ($rei.length && $torre.length) {
+                    $('#g1').html($rei.clone());
+                    $('#f1').html($torre.clone());
+                    $('#e1, #h1').empty();
+                }
+                tutorial.passosAtuais++;
+                tutorial.mostrarPasso();
+            }
+        },
 
-        tutorial.iniciar();
-    }
+        // 9. Objetivo final
+        {
+            mensagem: "♟️ O objetivo do Xadrez é colocar o Rei do oponente em xeque-mate — quando ele é atacado e não pode escapar.",
+            acao: null
+        },
+        {
+            mensagem: "🎉 Parabéns! Você aprendeu o movimento de todas as peças, o roque e o objetivo do jogo. Agora é hora de praticar de verdade!",
+            acao: null
+        }
+    ];
+
+    tutorial.iniciar();
+}
 });
