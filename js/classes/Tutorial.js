@@ -5,6 +5,27 @@ export class Tutorial {
         this.passos = [];
         this.passosAtuais = 0;
         this.pecaSelecionada = null;
+
+        // 🔹 Nova funcionalidade: registrador de tipos de ações
+        this.acoes = {
+            mensagem: (passo) => {},
+            selecionarPeca: (passo) => {
+                this.esperarSelecaoPeca(
+                    passo.peca.tipo,
+                    passo.peca.cor,
+                    passo.peca.casa || null
+                );
+            },
+            moverPeca: (passo) => {
+                this.esperarMovimento(passo.casasValidas);
+            },
+            resetTabuleiro: (passo) => {
+                if (typeof iniciarNovaPartida === "function") {
+                    iniciarNovaPartida("tutorial");
+                    this.jogo = jogoAtual;
+                }
+            }
+        };
     }
 
     iniciar() {
@@ -28,12 +49,19 @@ export class Tutorial {
 
         Swal.fire({
             title: 'Tutorial 🎓',
-            text: passo.mensagem,
+            text: passo.mensagem || passo.texto || "Siga as instruções.",
             icon: 'info',
             confirmButtonText: passo.acao ? 'Entendi' : 'Próximo',
             allowOutsideClick: false,
             allowEscapeKey: false
         }).then(() => {
+
+            // 🔹 Executa automaticamente a ação do passo, se houver
+            if (passo.tipo && this.acoes[passo.tipo]) {
+                this.acoes[passo.tipo](passo);
+                return;
+            }
+
             if (passo.acao) {
                 passo.acao();
             } else {
@@ -43,28 +71,16 @@ export class Tutorial {
         });
     }
 
-    /**
-     * Espera o usuário selecionar uma peça específica.
-     */
     esperarSelecaoPeca(tipo, cor, casaEspecifica = null) {
         const self = this;
         $('.piece.tutorial-highlight').removeClass('tutorial-highlight');
 
-        // Define seletor e descrição dependendo se é uma casa específica ou qualquer peça do tipo
         const seletorPeca = casaEspecifica
             ? `#${casaEspecifica} .piece.${tipo}-${cor}`
             : `.piece.${tipo}-${cor}`;
-        const seletorDesc = casaEspecifica
-            ? `${tipo}-${cor} em ${casaEspecifica}`
-            : `${tipo}-${cor}`;
 
         const $pecas = $(seletorPeca);
 
-        if ($pecas.length === 0) {
-            console.error(`Tutorial: Nenhuma peça encontrada com o seletor: ${seletorPeca}`);
-        }
-
-        // 🔹 Se for qualquer peça, destaca só a primeira (pra não poluir visualmente)
         if (!casaEspecifica && $pecas.length > 1) {
             $pecas.removeClass('tutorial-highlight');
             $pecas.eq(0).addClass('tutorial-highlight');
@@ -72,46 +88,38 @@ export class Tutorial {
             $pecas.addClass('tutorial-highlight');
         }
 
-        console.log(`Tutorial: Esperando clique em ${seletorDesc}`);
+        console.log(`Tutorial: Esperando clique em ${tipo}-${cor}`);
 
-        // Remove eventos antigos
         $('body').off('click.tutorial click.jogo click.quadrado');
 
-        // Ativa evento só para o tutorial
         $('body').on('click.tutorial', '.piece', function (e) {
             e.stopPropagation();
             const $pecaClicada = $(this);
             const casaClicada = $pecaClicada.parent().attr('id');
 
-            const ehPecaCerta = casaEspecifica
-                ? casaClicada === casaEspecifica && $pecaClicada.is(`.piece.${tipo}-${cor}`)
-                : $pecaClicada.is(`.piece.${tipo}-${cor}`);
+            const correto =
+                casaEspecifica
+                    ? casaClicada === casaEspecifica && $pecaClicada.is(`.piece.${tipo}-${cor}`)
+                    : $pecaClicada.is(`.piece.${tipo}-${cor}`);
 
-            if (ehPecaCerta) {
-                console.log(`✅ Tutorial: Peça correta selecionada (${casaClicada}).`);
+            if (correto) {
+                console.log(`Peça correta selecionada.`);
                 self.pecaSelecionada = casaClicada;
-
-                // Remove destaque e evento
                 $('.piece.tutorial-highlight').removeClass('tutorial-highlight');
                 $('body').off('click.tutorial');
 
-                // Passa para o próximo passo
                 self.passosAtuais++;
                 self.mostrarPasso();
             } else {
-                console.warn(`❌ Peça errada clicada (${casaClicada}).`);
                 Swal.fire(
                     'Peça Errada',
-                    `Por favor, selecione o ${tipo} ${cor}${casaEspecifica ? ' em ' + casaEspecifica : ''}.`,
+                    `Selecione o ${tipo} ${cor}${casaEspecifica ? " em " + casaEspecifica : ""}.`,
                     'warning'
                 );
             }
         });
     }
 
-    /**
-     * Espera o usuário mover a peça selecionada para uma casa válida.
-     */
     esperarMovimento(casasValidas) {
         const self = this;
 
@@ -124,36 +132,33 @@ export class Tutorial {
 
         $('.square-board.tutorial-highlight').removeClass('tutorial-highlight');
         casasValidas.forEach(casa => $(`#${casa}`).addClass('tutorial-highlight'));
-        console.log(`Tutorial: Esperando movimento para ${casasValidas.join(', ')}`);
+
+        console.log("Tutorial: Esperando movimento");
 
         $('body').off('click.tutorial click.jogo click.quadrado');
 
         $('body').on('click.tutorial', '.square-board', function (e) {
             e.stopPropagation();
-            const casaDestino = $(this).attr('id');
+            const destino = $(this).attr('id');
 
-            if (!casasValidas.includes(casaDestino)) {
-                Swal.fire('Movimento Inválido', `Selecione uma das casas destacadas: ${casasValidas.join(', ')}`, 'warning');
+            if (!casasValidas.includes(destino)) {
+                Swal.fire('Movimento Inválido', `Selecione uma casa válida.`, 'warning');
                 return;
             }
-
-            console.log(`Tutorial: Movimento correto para ${casaDestino}`);
 
             $('.square-board.tutorial-highlight').removeClass('tutorial-highlight');
             $('body').off('click.tutorial');
 
             try {
-                self.jogo.movimento.moverPeca(self.pecaSelecionada, casaDestino);
-                if (typeof self.jogo.limparMovimentosPossiveis === 'function') {
+                self.jogo.movimento.moverPeca(self.pecaSelecionada, destino);
+                if (self.jogo.limparMovimentosPossiveis) {
                     self.jogo.limparMovimentosPossiveis();
                 }
-            } catch (error) {
-                console.error("Erro ao mover peça via lógica do jogo.", error);
-                const $peca = $('#' + self.pecaSelecionada).find('.piece');
-                if ($peca.length > 0) {
-                    $('#' + casaDestino).html($peca.clone());
-                    $('#' + self.pecaSelecionada).empty();
-                }
+            } catch (err) {
+                console.error("Erro ao mover peça.", err);
+                const $p = $('#' + self.pecaSelecionada).find('.piece');
+                $('#' + destino).html($p.clone());
+                $('#' + self.pecaSelecionada).empty();
             }
 
             self.pecaSelecionada = null;
