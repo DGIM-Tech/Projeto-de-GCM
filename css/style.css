@@ -812,7 +812,41 @@ body {
 }
 
 /* Destaque visual do tutorial */
-.tutorial-highlight {
-    box-shadow: 0 0 15px 5px yellow;
+/* Peça de Origem (O que mover) - Amarelo Pulsante */
+.tutorial-source {
+    background-color: rgba(255, 215, 0, 0.7) !important; /* Amarelo Ouro */
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 15px #ffd700;
+    cursor: pointer;
+    animation: pulse-yellow 1.5s infinite;
+    z-index: 50;
+}
+
+/* Destino (Onde soltar) - Verde com Indicador */
+.tutorial-dest {
+    background-color: rgba(50, 205, 50, 0.6) !important; /* Verde Lima */
+    border: 3px dashed #32cd32 !important;
+    box-shadow: inset 0 0 10px #32cd32;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Adiciona uma "bolinha" no centro do destino para facilitar */
+.tutorial-dest::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 100, 0, 0.5);
     border-radius: 50%;
-    transition: 0.3s;
+}
+
+/* Animação para chamar atenção */
+@keyframes pulse-yellow {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}

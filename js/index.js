@@ -9,10 +9,44 @@ let ultimaConfiguracao = {};
 
 /** Inicia nova partida */
 function iniciarNovaPartida(modo, opcoes = {}) {
+    // Limpa a interface
     $('.board').empty();
     $('.stats .notation').empty();
     $('.capturadas-brancas').empty();
     $('.capturadas-pretas').empty();
+
+    // --- MODO TUTORIAL ---
+    if (modo === 'tutorial') {
+        console.log("Iniciando Modo Tutorial...");
+
+        // Cria jogadores fictícios para o motor do jogo funcionar
+        const p1 = new Jogador('Aluno', 'brancas');
+        const p2 = new Jogador('Professor', 'pretas');
+        
+        jogoAtual = new Jogo(p1, p2);
+
+        // Configura globais
+        window.jogoAtual = jogoAtual;
+        $('.board').data('jogo', jogoAtual);
+        
+        // Desenha o tabuleiro inicial
+        jogoAtual.iniciar();
+
+        // Inicia a Classe Tutorial (O roteiro está DENTRO do arquivo Tutorial.js)
+        const tutorial = new Tutorial(jogoAtual);
+        tutorial.iniciar();
+
+        return; // Sai da função para não carregar lógica de jogo normal
+    }
+
+    // --- OUTROS MODOS ---
+    if (modo === 'restaurar' && opcoes.estado) {
+        jogoAtual = new Jogo();
+        jogoAtual.carregarEstado(opcoes.estado);
+        window.jogoAtual = jogoAtual;
+        $('.board').data('jogo', jogoAtual);
+        return;
+    }
 
     let jogador1, jogador2;
 
@@ -30,24 +64,9 @@ function iniciarNovaPartida(modo, opcoes = {}) {
             jogador2 = new Jogador('Você', 'pretas');
         }
     }
-    else if (modo === 'restaurar' && opcoes.estado) {
-        jogoAtual = new Jogo();
-        jogoAtual.carregarEstado(opcoes.estado);
-        return;
-    }
-    else if (modo === 'tutorial') {
-        // No modo tutorial, a IA não deve jogar
-        jogador1 = new Jogador('Você', 'brancas');
-        jogador2 = new JogadorIA('IA Tutorial', 'iniciante'); // IA fica parada
-    }
 
+    // Inicia jogo normal
     jogoAtual = new Jogo(jogador1, jogador2);
-
-    if (modo === 'tutorial') {
-        jogoAtual.jogadorAtual = jogador1; // Garante que é sempre sua vez
-        jogoAtual.trocarTurno = () => { }; // Desativa a troca de turno
-    }
-
     window.jogoAtual = jogoAtual;
     $('.board').data('jogo', jogoAtual);
     jogoAtual.iniciar();
@@ -77,6 +96,7 @@ function finalizarPartida(mensagem) {
     });
 }
 
+// --- EVENTOS DO DOM ---
 document.addEventListener('DOMContentLoaded', () => {
     const telaInicial = document.getElementById('telaInicial');
     const box = document.querySelector('.box');
@@ -88,13 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
         controles.classList.add('ativo');
     }
 
-    // ... (O resto do seu código de carregar jogo salvo, botões de amigo e computador continua igual) ...
-    // --- Botões iniciais ---
+    // 1. Botão Amigo
     document.getElementById('btnAmigo').addEventListener('click', () => {
         mostrarInterfaceJogo();
         iniciarNovaPartida('amigo');
     });
 
+    // 2. Botão Computador
     document.getElementById('btnComputador').addEventListener('click', () => {
         telaInicial.style.display = 'none';
         Swal.fire({
@@ -130,208 +150,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 🔹 Botão Tutorial
+    // 3. Botão Tutorial (CORRIGIDO)
     document.getElementById('btnTutorial').addEventListener('click', () => {
-        iniciarModoTutorial();
+        mostrarInterfaceJogo();
+        iniciarNovaPartida('tutorial');
     });
 
-    // --- Botões de controle ---
-    // ... (Seus botões de Desistir, Empate e Reiniciar continuam iguais) ...
+    // 4. Botões de Controle
     document.getElementById('btnDesistir').addEventListener('click', () => {
-        if (!window.jogoAtual) {
-            Swal.fire('Atenção', 'Nenhum jogo em andamento!', 'warning');
-            return;
-        }
+        if (!window.jogoAtual) return;
+        
         const desistente = window.jogoAtual.jogadorAtual;
         const corDesistente = desistente.cor.toLowerCase();
         const vencedor = (corDesistente === 'brancas') ? 'Pretas' : 'Brancas';
-        const mensagem = `As ${corDesistente.charAt(0).toUpperCase() + corDesistente.slice(1)} desistiram da partida. As ${vencedor} venceram!`;
-        finalizarPartida(mensagem);
+        
+        finalizarPartida(`As ${corDesistente} desistiram. ${vencedor} venceram!`);
     });
 
     document.getElementById('btnEmpate').addEventListener('click', () => {
-        if (!window.jogoAtual) {
-            Swal.fire('Atenção', 'Nenhum jogo em andamento!', 'warning');
-            return;
-        }
+        if (!window.jogoAtual) return;
+        
         Swal.fire({
-            title: 'Você aceita o empate?',
-            text: 'Se aceitar, a partida será encerrada. Caso contrário, ela continuará normalmente.',
-            icon: 'question',
+            title: 'Propor Empate',
+            text: 'Aceita o empate?',
             showCancelButton: true,
-            confirmButtonText: 'Sim',
-            cancelButtonText: 'Não'
+            confirmButtonText: 'Sim'
         }).then((result) => {
-            if (result.isConfirmed) {
-                finalizarPartida('A partida terminou em empate.');
-            } else {
-                Swal.fire({
-                    title: 'Empate recusado',
-                    text: 'A partida continuará normalmente.',
-                    icon: 'info',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            }
+            if (result.isConfirmed) finalizarPartida('Empate acordado.');
         });
     });
+
     document.getElementById('btnVoltarMenu').addEventListener('click', () => {
         Swal.fire({
-            title: 'Voltar à tela inicial?',
-            text: 'A partida atual será encerrada.',
-            icon: 'question',
+            title: 'Voltar ao Menu?',
+            text: 'O jogo atual será perdido.',
             showCancelButton: true,
-            confirmButtonText: 'Sim',
-            cancelButtonText: 'Não'
+            confirmButtonText: 'Sim'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Remove qualquer estado de jogo salvo
                 localStorage.removeItem('estadoJogo');
-
-                // Esconde o tabuleiro e mostra a tela inicial
-                document.querySelector('.box').classList.remove('ativo');
-                document.querySelector('.controles').classList.remove('ativo');
-                document.getElementById('telaInicial').style.display = 'flex';
-
-                // Limpa o tabuleiro e estatísticas
+                box.classList.remove('ativo');
+                controles.classList.remove('ativo');
+                telaInicial.style.display = 'flex';
+                
                 $('.board').empty();
-                $('.stats .notation').empty();
-                $('.capturadas-brancas').empty();
-                $('.capturadas-pretas').empty();
-
-                // Reseta a variável de jogo
                 window.jogoAtual = null;
             }
         });
     });
 
-
-    // --- FUNÇÃO TUTORIAL ATUALIZADA E APRIMORADA ---
-    function iniciarModoTutorial() {
-        mostrarInterfaceJogo();
-        iniciarNovaPartida("tutorial");
-
-        const tutorial = new Tutorial(jogoAtual);
-
-        tutorial.passos = [
-            // ===============================
-            // 1) INTRODUÇÃO
-            // ===============================
-            {
-                mensagem: "🎓 Bem-vindo ao tutorial de Xadrez! Aqui você vai aprender como cada peça se move.",
-                acao: null
-            },
-
-            // ===============================
-            // 2) PEÃO
-            // ===============================
-            {
-                mensagem: "Começaremos pelo PEÃO. Ele anda só para frente. Clique no peão em 'e2'.",
-                acao: () => tutorial.esperarSelecaoPeca("pawn", "white", "e2")
-            },
-            {
-                mensagem: "O peão pode andar 1 ou 2 casas na primeira jogada. Mova-o para 'e4'.",
-                acao: () => tutorial.esperarMovimento(["e3", "e4"])
-            },
-
-            // ===============================
-            // 3) CAVALO (🔹 CORRIGIDO)
-            // ===============================
-            {
-                mensagem: "Agora o CAVALO. Ele move em forma de L e pode pular peças. Clique no cavalo em 'g1'.",
-                acao: () => tutorial.esperarSelecaoPeca("knight", "white", "g1")
-            },
-            {
-                // 🔹 CORREÇÃO: Movemos para 'h3' para não bloquear a Dama.
-                mensagem: "Agora mova o cavalo para 'h3'. Isso deixará a diagonal da Dama livre.",
-                acao: () => tutorial.esperarMovimento(["h3"])
-            },
-
-            // ===============================
-            // 4) BISPO
-            // ===============================
-            {
-                mensagem: "O BISPO anda na diagonal sem pular peças. Clique no bispo em 'f1'.",
-                acao: () => tutorial.esperarSelecaoPeca("bishop", "white", "f1")
-            },
-            {
-                // O caminho (e2, d3, c4) está livre, pois 'e2' está vazio (o peão foi para e4).
-                mensagem: "O caminho está livre! Mova o bispo para 'c4'.",
-                acao: () => tutorial.esperarMovimento(["c4"])
-            },
-
-            // ===============================
-            // 5) TORRE (🔹 CORRIGIDO)
-            // ===============================
-            {
-                mensagem: "A TORRE anda em linha reta. Primeiro precisamos liberar seu caminho. Clique no peão em 'a2'.",
-                acao: () => tutorial.esperarSelecaoPeca("pawn", "white", "a2")
-            },
-            {
-                mensagem: "Mova este peão para 'a3'.",
-                acao: () => tutorial.esperarMovimento(["a3", "a4"])
-            },
-            {
-                mensagem: "Agora clique na torre em 'a1'.",
-                acao: () => tutorial.esperarSelecaoPeca("rook", "white", "a1")
-            },
-            {
-                // 🔹 CORREÇÃO: O destino correto é 'a2' (a casa que o peão liberou), não 'a3'.
-                mensagem: "Mova a torre para 'a2'.",
-                acao: () => tutorial.esperarMovimento(["a2"])
-            },
-
-            // ===============================
-            // 6) DAMA (🔹 CORRIGIDO)
-            // ===============================
-            {
-                mensagem: "A DAMA é a peça mais poderosa! Anda na diagonal, vertical e horizontal. Clique na Dama em 'd1'.",
-                acao: () => tutorial.esperarSelecaoPeca("queen", "white", "d1")
-            },
-            {
-                // 🔹 CORREÇÃO: Agora o caminho (d1-h5) está livre, pois o cavalo foi para 'h3'.
-                mensagem: "Como o cavalo não está em f3, o caminho está livre! Mova a dama para 'h5'.",
-                acao: () => tutorial.esperarMovimento(["h5"])
-            },
-
-            // ===============================
-            // 7) REI E ROQUE (🔹 CORRIGIDO)
-            // ===============================
-            {
-                mensagem: "O REI anda 1 casa em qualquer direção. É a peça mais importante e NÃO PODE ser capturada.",
-                acao: null
-            },
-            {
-                // 🔹 CORREÇÃO: Removemos o movimento 'e1 -> e2' para NÃO invalidar o Roque.
-                mensagem: "O Rei tem um movimento especial: O ROQUE (Castling). Isso o protege e ativa a Torre.",
-                acao: null
-            },
-            {
-                mensagem: "Para fazer o Roque, o caminho deve estar livre, e nem o Rei nem a Torre podem ter se movido ainda.",
-                acao: null
-            },
-            {
-                mensagem: "Nosso caminho está livre. Clique no Rei em 'e1' para iniciar.",
-                acao: () => tutorial.esperarSelecaoPeca("king", "white", "e1")
-            },
-            {
-                mensagem: "Agora clique na casa 'g1' para fazer o Roque Pequeno. A Torre se moverá sozinha!",
-                acao: () => tutorial.esperarMovimento(["g1"])
-            },
-
-            // ===============================
-            // 9) FINALIZAÇÃO
-            // ===============================
-            {
-                mensagem: "♟️ Excelente! Você aprendeu os movimentos de todas as peças e o Roque.",
-                acao: null
-            },
-            {
-                mensagem: "🎉 Tutorial concluído! Agora você está pronto para jogar.",
-                acao: null
-            }
-        ];
-
-        tutorial.iniciar();
-    }
 });
