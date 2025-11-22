@@ -21,7 +21,7 @@
         }
         .tela-inicial button:hover { background: #0b5f68; color: white; }
 
-        .box, .controles { visibility: hidden; opacity: 0; transition: opacity 0.6s ease; }
+        .box, .controles { visibility: visible; opacity: 1 }
         .box.ativo, .controles.ativo { visibility: visible; opacity: 1; }
 
         .btn-controle {
@@ -173,10 +173,12 @@
                 </div>
             </div>
 
+            
             <h3>Histórico de Jogadas</h3>
             <div class="notation">
-                <div class="notation-content"></div>
+                <div class="notation-content" id="notationMobile"></div>
             </div>
+            
         </div>
     </div>
 
@@ -217,9 +219,10 @@
         <div class="stats">
             <div class="notation">
                 <h3>Histórico de Jogadas</h3>
-                <div class="notation-content"></div>
+                <div class="notation-content" id="notationPrincipal"></div>
             </div>
         </div>
+
     </div>
 
     <div class="controles">
@@ -245,11 +248,12 @@
     <script type="module" src="js/index.js"></script>
     <script src="js/classes/Jogo.js"></script>
     <!-- Chess.js (lógica de xadrez) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
 
-<!-- Chessboard.js (tabuleiro visual) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
+    <!-- Chessboard.js (tabuleiro visual) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
+    
     <script>
         const menuToggle = document.getElementById('menuToggle');
         const telaInicial = document.getElementById('telaInicial');
@@ -283,22 +287,40 @@
         window.addEventListener('resize', atualizarVisibilidadeMenu);
         atualizarVisibilidadeMenu();
 
-        /* === SINCRONIZAR CAPTURAS === */
+        /* === ELEMENTOS === */
+        // CAPTURAS
         const capturasBrancasMobile = document.getElementById('capturasBrancasMobile');
         const capturasPretasMobile = document.getElementById('capturasPretasMobile');
         const capturasBrancasPrincipal = document.getElementById('capturasBrancasPrincipal');
         const capturasPretasPrincipal = document.getElementById('capturasPretasPrincipal');
 
-        // Copia o conteúdo do painel lateral para a área principal
+        // NOTATION
+        const notationMobile = document.getElementById('notationMobile');
+        const notationPrincipal = document.getElementById('notationPrincipal');
+
+
+        /* === SINCRONIZAR CAPTURAS === */
         function sincronizarCapturas() {
             capturasBrancasPrincipal.innerHTML = capturasBrancasMobile.innerHTML;
             capturasPretasPrincipal.innerHTML = capturasPretasMobile.innerHTML;
         }
 
-        // Observa mudanças nas capturas do painel lateral e copia para a área principal
         const observerCapturas = new MutationObserver(sincronizarCapturas);
         observerCapturas.observe(capturasBrancasMobile, { childList: true, subtree: true });
         observerCapturas.observe(capturasPretasMobile, { childList: true, subtree: true });
+
+
+        /* === SINCRONIZAR HISTÓRICO DE JOGADAS === */
+        function sincronizarHistorico() {
+            notationPrincipal.innerHTML = notationMobile.innerHTML;
+        }
+
+        // Observa mudanças no histórico (mobile → principal)
+        const observerHistorico = new MutationObserver(sincronizarHistorico);
+        observerHistorico.observe(notationMobile, { childList: true, subtree: true });
+
+
+        
     </script>
 </body>
 </html>
