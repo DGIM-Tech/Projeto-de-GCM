@@ -5,7 +5,9 @@
     <title>Xadrez com IA</title>
     <link href="css/style.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <style>
+        /* Tela inicial */
         .tela-inicial {
             position: fixed; inset: 0; background: #0E7886;
             display: flex; flex-direction: column; justify-content: center;
@@ -19,7 +21,7 @@
         }
         .tela-inicial button:hover { background: #0b5f68; color: white; }
 
-        .box, .controles { visibility: hidden; opacity: 0; transition: opacity 0.6s ease; }
+        .box, .controles { visibility: visible; opacity: 1 }
         .box.ativo, .controles.ativo { visibility: visible; opacity: 1; }
 
         .btn-controle {
@@ -31,11 +33,156 @@
         .azul { background: #0d6efd; color: white; }
         .btn-controle:hover { opacity: 0.85; }
 
-        .swal2-html-container h3 { margin-top: 15px; margin-bottom: 8px; }
+        .menu-toggle {
+            display: none;
+            top: 15px;
+            right: 15px;
+            z-index: 3000;
+            background: #0E7886;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .menu-lateral {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 80%;
+            max-width: 320px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -3px 0 10px rgba(0,0,0,0.3);
+            z-index: 2500;
+            padding: 20px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .menu-lateral.ativo {
+            display: block;
+            transform: translateX(0);
+        }
+
+        .close-menu {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #B20E0E;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .menu-content h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #0E7886;
+        }
+
+        @media (max-width: 768px) {
+            .stats { display: none; }
+            .menu-toggle { display: block; }
+        }
+
+        /* ===== RESPONSIVIDADE ===== */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+                margin: 0;
+                padding: 0;
+                background-color: #f0f0f0;
+            }
+
+            .box {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding-top: 70px; /* espaço para o ícone ☰ */
+                width: 100%;
+            }
+
+            /* Move o tabuleiro um pouco para cima e para a esquerda */
+            .board-wrapper {
+                position: relative;
+                top: -60px; /* sobe o tabuleiro */
+                left: -30px; /* move para a esquerda */
+                transition: all 0.3s ease;
+            }
+
+            /* Garante que letras e números acompanhem */
+            .letters-top,
+            .letters-bottom,
+            .numbers-left,
+            .numbers-right {
+                position: relative;
+                /* left: -30px; */
+            }
+
+            .controles {
+                margin-top: -120px;
+                display: flex;
+                gap: 15px;
+                transition: all 0.3s ease;
+            }
+
+            /* Ajusta os próprios botões */
+            .controles button {
+                margin: 0 2px; /* reduz margem lateral */
+                padding: 8px 12px; /* mantém tamanho equilibrado */
+            }
+
+            .menu-toggle {
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                z-index: 4000;
+            }
+        }
+
     </style>
 </head>
 
 <body>
+    <button id="menuToggle" class="menu-toggle">☰</button>
+
+    <!-- Painel lateral -->
+    <div id="menuLateral" class="menu-lateral">
+        <button id="closeMenu" class="close-menu">✕</button>
+        <div class="menu-content">
+            <h3>Peças Capturadas</h3>
+            <div class="capturadas">
+                <div class="secao-capturas">
+                    <h4>Capturas pretas</h4>
+                    <div class="area-capturas capturadas-brancas" id="capturasBrancasMobile"></div>
+                </div>
+                <div class="secao-capturas">
+                    <h4>Capturas brancas</h4>
+                    <div class="area-capturas capturadas-pretas" id="capturasPretasMobile"></div>
+                </div>
+            </div>
+
+            
+            <h3>Histórico de Jogadas</h3>
+            <div class="notation">
+                <div class="notation-content" id="notationMobile"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Tela inicial -->
     <div class="tela-inicial" id="telaInicial">
         <h1>Jogo de Xadrez</h1>
         <button id="btnAmigo">Jogar contra um amigo</button>
@@ -43,17 +190,18 @@
         <button id="btnTutorial">Modo Tutorial</button>
     </div>
 
+    <!-- Área principal -->
     <div class="box">
         <div class="stats">
             <div class="capturadas">
                 <h3>Peças Capturadas</h3>
                 <div class="secao-capturas">
                     <h4>Capturas pretas</h4>
-                    <div class="area-capturas capturadas-brancas"></div>
+                    <div class="area-capturas" id="capturasBrancasPrincipal"></div>
                 </div>
                 <div class="secao-capturas">
                     <h4>Capturas brancas</h4>
-                    <div class="area-capturas capturadas-pretas"></div>
+                    <div class="area-capturas" id="capturasPretasPrincipal"></div>
                 </div>
             </div>
         </div>
@@ -69,29 +217,110 @@
         </div>
 
         <div class="stats">
-            <div class="notation"></div>
+            <div class="notation">
+                <h3>Histórico de Jogadas</h3>
+                <div class="notation-content" id="notationPrincipal"></div>
+            </div>
         </div>
+
     </div>
 
     <div class="controles">
         <button id="btnDesistir" class="btn-controle vermelho">Desistir</button>
         <button id="btnEmpate" class="btn-controle cinza">Pedir Empate</button>
-        <button id="btnReiniciar" class="btn-controle azul">Reiniciar</button>
+        <button id="btnVoltarMenu" class="btn-controle azul">Voltar ao Menu</button>
     </div>
-
-    <!-- Modal de promoção -->
-    <div id="promotionModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-        background:#fff; padding:20px; border:2px solid #000; z-index:1000; text-align:center;">
-        <h3>Escolha a peça para promoção</h3>
-        <button class="promote" data-piece="queen">Rainha</button>
-        <button class="promote" data-piece="rook">Torre</button>
-        <button class="promote" data-piece="bishop">Bispo</button>
-        <button class="promote" data-piece="knight">Cavalo</button>
+    <div id="promotionModal" style="display: none;">
+    <div class="modal-content">
+        <h4>Promover Peão para:</h4>
+        <div class="promotion-choices">
+            <div class="promote piece queen-white" data-piece="queen"></div>
+            <div class="promote piece rook-white" data-piece="rook"></div>
+            <div class="promote piece bishop-white" data-piece="bishop"></div>
+            <div class="promote piece knight-white" data-piece="knight"></div>
+        </div>
     </div>
+</div>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script type="module" src="js/index.js"></script>
+    <script src="js/classes/Jogo.js"></script>
+    <!-- Chess.js (lógica de xadrez) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+
+    <!-- Chessboard.js (tabuleiro visual) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
+    
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const telaInicial = document.getElementById('telaInicial');
+        const menuLateral = document.getElementById('menuLateral');
+        const promotionModal = document.getElementById('promotionModal');
+
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            menuLateral.classList.add('ativo');
+        });
+        document.getElementById('closeMenu').addEventListener('click', () => {
+            menuLateral.classList.remove('ativo');
+        });
+
+        function atualizarVisibilidadeMenu() {
+            const modalAberto =
+                (telaInicial && telaInicial.style.display !== 'none') ||
+                (menuLateral && menuLateral.classList.contains('ativo')) ||
+                (promotionModal && promotionModal.style.display === 'block');
+
+            if (window.innerWidth <= 768 && !modalAberto) {
+                menuToggle.style.display = 'block';
+            } else {
+                menuToggle.style.display = 'none';
+            }
+        }
+
+        const observer = new MutationObserver(atualizarVisibilidadeMenu);
+        observer.observe(telaInicial, { attributes: true, attributeFilter: ['style'] });
+        if (promotionModal) observer.observe(promotionModal, { attributes: true, attributeFilter: ['style'] });
+        observer.observe(menuLateral, { attributes: true, attributeFilter: ['class'] });
+        window.addEventListener('resize', atualizarVisibilidadeMenu);
+        atualizarVisibilidadeMenu();
+
+        /* === ELEMENTOS === */
+        // CAPTURAS
+        const capturasBrancasMobile = document.getElementById('capturasBrancasMobile');
+        const capturasPretasMobile = document.getElementById('capturasPretasMobile');
+        const capturasBrancasPrincipal = document.getElementById('capturasBrancasPrincipal');
+        const capturasPretasPrincipal = document.getElementById('capturasPretasPrincipal');
+
+        // NOTATION
+        const notationMobile = document.getElementById('notationMobile');
+        const notationPrincipal = document.getElementById('notationPrincipal');
+
+
+        /* === SINCRONIZAR CAPTURAS === */
+        function sincronizarCapturas() {
+            capturasBrancasPrincipal.innerHTML = capturasBrancasMobile.innerHTML;
+            capturasPretasPrincipal.innerHTML = capturasPretasMobile.innerHTML;
+        }
+
+        const observerCapturas = new MutationObserver(sincronizarCapturas);
+        observerCapturas.observe(capturasBrancasMobile, { childList: true, subtree: true });
+        observerCapturas.observe(capturasPretasMobile, { childList: true, subtree: true });
+
+
+        /* === SINCRONIZAR HISTÓRICO DE JOGADAS === */
+        function sincronizarHistorico() {
+            notationPrincipal.innerHTML = notationMobile.innerHTML;
+        }
+
+        // Observa mudanças no histórico (mobile → principal)
+        const observerHistorico = new MutationObserver(sincronizarHistorico);
+        observerHistorico.observe(notationMobile, { childList: true, subtree: true });
+
+
+        
+    </script>
 </body>
 </html>

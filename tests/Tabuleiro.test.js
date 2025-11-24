@@ -3,7 +3,7 @@
  */
 
 import $ from 'jquery';
-import { Tabuleiro } from 'js/classes/Tabuleiro'; // ajuste o caminho do arquivo
+import { Tabuleiro } from '../js/classes/Tabuleiro'; // ajuste o caminho do arquivo
 
 describe('Classe Tabuleiro', () => {
     let tabuleiro;
