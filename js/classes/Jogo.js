@@ -173,10 +173,10 @@ export class Jogo {
         console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
-    continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
-        console.log("Continuando turno após promoção para:", promocaoPara);
-        this.finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara);
-    }
+    // continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
+    //     console.log("Continuando turno após promoção para:", promocaoPara);
+    //     this.finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara);
+    // }
     finalizarTurno(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara = null) {
         if (peca.hasClass('pawn') && Math.abs(origem[1] - destino[1]) === 2) {
             const file = origem[0];

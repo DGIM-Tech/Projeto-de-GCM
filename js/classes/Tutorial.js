@@ -57,26 +57,26 @@ export class Tutorial {
             { tipo: 'usuario', origem: 'e1', destino: 'g1', dica: "Faça o 'Roque Curto'. Mova seu Rei duas casas para a direita, de e1 para g1." },
             { tipo: 'info', titulo: 'Excelente!', mensagem: "Perfeito! Veja como a Torre se moveu automaticamente para o lado do Rei. Agora seu Rei está mais seguro no canto do tabuleiro." },
         ];
-        
+
         // 4. PARTIDA SIMULADA (MAIS LONGA E INSTRUTIVA)
-        const partida_instrutiva = [
-            { tipo: 'info', titulo: 'Vamos Jogar!', mensagem: "Agora que você conhece as regras, vamos jogar uma partida simulada. Siga as dicas para entender os princípios de uma boa abertura." },
-            { tipo: 'setup', posicao: 'inicial' }, // 'inicial' é uma palavra-chave para a posição padrão
-            { tipo: 'usuario', origem: 'e2', destino: 'e4', dica: "Lance 1: Controle o centro com o peão do Rei. Este é o lance de abertura mais popular." },
-            { tipo: 'auto', origem: 'e7', destino: 'e5', mensagem: "Seu oponente responde da mesma forma, disputando o controle do centro." },
-            { tipo: 'usuario', origem: 'g1', destino: 'f3', dica: "Lance 2: Desenvolva seu cavalo. Ele ataca o peão preto em e5 e se prepara para o Roque." },
-            { tipo: 'auto', origem: 'b8', destino: 'c6', mensagem: "As pretas também desenvolvem o cavalo, defendendo seu peão." },
-            { tipo: 'usuario', origem: 'f1', destino: 'c4', dica: "Lance 3: Desenvolva seu bispo para uma casa ativa. A partir de c4, ele pressiona o ponto fraco f7." },
-            { tipo: 'auto', origem: 'g8', destino: 'f6', mensagem: "O oponente desenvolve seu outro cavalo, atacando seu peão em e4." },
-            { tipo: 'usuario', origem: 'd2', destino: 'd3', dica: "Lance 4: Defenda seu peão central. Este é um lance sólido que fortalece sua posição." },
-            { tipo: 'auto', origem: 'f8', destino: 'c5', mensagem: "As pretas colocam seu bispo em uma posição similar à sua." },
-            { tipo: 'usuario', origem: 'e1', destino: 'g1', dica: "Lance 5: Faça o Roque! Coloque seu Rei em segurança para poder focar no ataque." },
-            { tipo: 'auto', origem: 'h7', destino: 'h6', mensagem: "As pretas fazem um lance de peão para controlar a casa g5." },
-            { tipo: 'usuario', origem: 'c2', destino: 'c3', dica: "Lance 6: Prepare-se para avançar no centro com o peão 'd'. Isso lhe dará mais espaço." },
-            { tipo: 'auto', origem: 'e8', destino: 'g8', mensagem: "Seu oponente também faz o Roque, colocando o Rei em segurança." },
-            
-            { tipo: 'info', titulo: 'Posição Sólida', mensagem: "Ótimo trabalho! Ambos os lados desenvolveram suas peças, protegeram seus Reis e estão prontos para a próxima fase do jogo. A partir daqui, as possibilidades são infinitas!" },
-            { tipo: 'conclusao', titulo: 'Tutorial Completo!', mensagem: "Parabéns! Você aprendeu o objetivo do xadrez, o movimento de todas as peças, regras especiais como o Roque e os princípios de uma boa abertura. Você está pronto para jogar!" }
+        const partida_xeque_mate_simples = [
+            { tipo: 'info', titulo: 'Xeque-mate do Pastor (4 Movimentos)', mensagem: "Este é um xeque-mate rápido e famoso. O objetivo é mostrar como peças podem trabalhar juntas para um ataque rápido." },
+            { tipo: 'setup', posicao: 'inicial' },
+
+            { tipo: 'usuario', origem: 'e2', destino: 'e4', dica: "1. e4: Comece controlando o centro com o peão do Rei." },
+            { tipo: 'auto', origem: 'e7', destino: 'e5', mensagem: "1... e5: Pretas respondem controlando o centro." },
+
+            { tipo: 'usuario', origem: 'd1', destino: 'h5', dica: "2. Dh5: Traga a Dama para h5 para começar a mirar a fraca casa f7." },
+            { tipo: 'auto', origem: 'b8', destino: 'c6', mensagem: "2... Cc6: As pretas desenvolvem o Cavalo para c6." },
+
+            { tipo: 'usuario', origem: 'f1', destino: 'c4', dica: "3. Bc4: O Bispo entra no jogo, atacando novamente a casa f7." },
+            { tipo: 'auto', origem: 'g8', destino: 'f6', mensagem: "3... Cf6: As pretas tentam se defender de f7, mas este é um erro fatal." },
+
+            // ESTE É O MOVIMENTO DO MATE: h5 para f7
+            { tipo: 'usuario', origem: 'h5', destino: 'f7', dica: "4. Dxf7: XEQUE-MATE! A Dama em f7 é apoiada pelo Bispo em c4. O Rei não pode escapar nem a peça pode ser capturada." },
+
+            // Passo de conclusão que será ativado pela detecção de xeque-mate do Jogo.js
+            { tipo: 'finalizacao', titulo: 'Xeque-Mate!', mensagem: "Parabéns! O Rei está cercado sem movimentos legais. Escolha sair ou reiniciar abaixo." }
         ];
 
         // =====================================================================
@@ -87,10 +87,10 @@ export class Tutorial {
                 ...intro_xadrez,
                 ...movimento_pecas,
                 ...movimentos_especiais,
-                ...partida_instrutiva
+                ...partida_xeque_mate_simples
             ],
             'mate_pastor': [/* roteiro original */], // Pode manter outros se quiser
-            'partida_avancada': partida_instrutiva // Permite iniciar só a partida
+            'partida_avancada': partida_xeque_mate_simples // Permite iniciar só a partida
         };
     }
 
@@ -129,9 +129,12 @@ export class Tutorial {
             case 'auto':
                 this.executarMovimentoAutomatico(passo);
                 break;
+            case 'finalizacao':
+                this.finalizar();
+                break;
         }
     }
-    
+
     prepararTabuleiro(posicao, mensagem) {
         if (posicao === 'inicial') {
             this.jogo.tabuleiro.inicar(); // Usa a função do seu jogo para resetar
@@ -141,7 +144,7 @@ export class Tutorial {
                 $(`#${casa}`).html(`<div class="piece ${posicao[casa]}"></div>`);
             }
         }
-        
+
         $('.capturadas-brancas, .capturadas-pretas').empty();
         this.jogo.whiteKingMoved = false;
         this.jogo.blackKingMoved = false;
@@ -194,7 +197,7 @@ export class Tutorial {
         // Usamos toast para movimentos automáticos para serem mais rápidos
         this._mostrarToast(passo.mensagem, 'info');
         setTimeout(() => {
-             this._realizarMovimento(passo.origem, passo.destino);
+            this._realizarMovimento(passo.origem, passo.destino);
             $('.square-board').removeClass('last-move');
             $(`#${passo.origem}, #${passo.destino}`).addClass('last-move');
         }, 1500); // Um delay para o jogador ler o toast
@@ -230,7 +233,7 @@ export class Tutorial {
         if (!isPromocao) {
             this.jogo._tentarMoverPeca(destinoEl);
         } else {
-             this.jogo._executarMovimento(pecaEl, origem, destino);
+            this.jogo._executarMovimento(pecaEl, origem, destino);
         }
 
         destinoEl.removeClass('possible');
@@ -240,17 +243,29 @@ export class Tutorial {
     finalizar() {
         $('body').off();
         $('.square-board').removeClass('tutorial-source tutorial-dest selected last-move');
+
         Swal.fire({
             title: 'Tutorial Encerrado',
-            text: "Você gostaria de iniciar um novo jogo?",
+            text: 'O que você deseja fazer agora?',
             icon: 'question',
+            showDenyButton: true,
             showCancelButton: true,
-            confirmButtonText: 'Sim, reiniciar!',
-            cancelButtonText: 'Não, voltar ao menu'
+            confirmButtonText: '🔁 Reiniciar Tutorial',
+            denyButtonText: '🏁 Ir para o Menu',
+            cancelButtonText: '❌ Cancelar',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.reload();
+                // reinicia o tutorial
+                this.indicePasso = 0;
+                this.executarPassoAtual();
             }
+            else if (result.isDenied) {
+                // vai para o menu principal
+                window.location.href = '/';
+            }
+            // cancelar → não faz nada
         });
     }
 
@@ -268,7 +283,27 @@ export class Tutorial {
             if (result.isConfirmed) {
                 callback();
             } else if (result.isDenied) {
-                this.finalizar();
+                Swal.fire({
+                    title: 'Encerrar Tutorial',
+                    text: 'O que você deseja fazer agora?',
+                    icon: 'question',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: '🔁 Reiniciar Tutorial',
+                    denyButtonText: '🏁 Ir para o Menu',
+                    cancelButtonText: '❌ Cancelar',
+                }).then((escolha) => {
+                    if (escolha.isConfirmed) {
+                        // reinicia o tutorial
+                        this.indicePasso = 0;
+                        this.executarPassoAtual();
+                    }
+                    else if (escolha.isDenied) {
+                        // vai para o menu principal
+                        window.location.href = '/';
+                    }
+                    // cancelar → não faz nada
+                });
             }
         });
     }
