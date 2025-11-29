@@ -1,66 +1,71 @@
-// Local: js/classes/JogadorIA.js
 import { Jogador } from './Jogador.js';
 
 export class JogadorIA extends Jogador {
-    constructor(cor, nivelDificuldade = 'médio') {
-        super('Computador', cor);
-        this.tipo = 'IA';
-        this.nivelDificuldade = nivelDificuldade;
+  constructor(cor, nivelDificuldade = 'médio') {
+    super('Computador', cor);
+    this.tipo = 'IA';
+    this.nivelDificuldade = nivelDificuldade;
+  }
+
+  async fazerMovimento(jogo) {
+    const depthMap = {
+      iniciante: 1,
+      fácil: 3,
+      médio: 6,
+      difícil: 10
+    };
+
+    const depth = depthMap[this.nivelDificuldade];
+
+    try {
+      const fen = jogo._gerarFEN();
+
+      const response = await fetch('https://chess-api.com/v1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fen, depth })
+      });
+
+      // Se a resposta HTTP não for 2xx, o fluxo deve ir para o catch (embora fetch só lance erro em falha de rede)
+      // Se você quiser tratar erros HTTP aqui, adicione:
+      // if (!response.ok) throw new Error("API retornou erro HTTP"); 
+      
+      const data = await response.json();
+
+      if (!data || typeof data.move !== 'string') {
+        Swal.fire('Erro', 'Movimento inválido retornado pela IA', 'error');
+        return null;
+      }
+
+      const casaOrigem = data.move.slice(0, 2);
+      const casaDestino = data.move.slice(2, 4);
+
+      // ✅ CORREÇÃO: Simplifica a lógica de acesso ao jQuery. 
+      // O 'globalThis.$' e a manipulação do DOM devem estar dentro do try/catch.
+      let peca = null;
+      try {
+        // Usa o operador ?. (optional chaining) para evitar falhas se globalThis.$ for null/undefined.
+        // Se globalThis.$ for null, o resultado será null e não lançará exceção.
+        peca = globalThis.$?.('#' + casaOrigem)?.find?.('.piece') ?? null;
+      } catch (e) {
+        // Este catch pega erros na execução do jQuery/DOM, garantindo que peca seja null.
+        peca = null;
+      }
+
+      return {
+        casaOrigem,
+        casaDestino,
+        peca
+      };
+
+    } catch (erro) {
+      // Este catch lida com falhas de rede (fetch) ou erros de parse do JSON.
+      Swal.fire(
+        'Erro de Conexão',
+        'Não foi possível contatar a IA',
+        'error'
+      );
+      return null;
     }
-
-    async fazerMovimento(jogo) {
-        // 🔹 Define profundidade conforme dificuldade
-        const profundidade = {
-            'iniciante': 1,  // Joga rápido e com pouca precisão
-            'fácil': 3,
-            'médio': 6,
-            'difícil': 10
-        }[this.nivelDificuldade];
-
-        const fen = jogo._gerarFEN();
-        const url = `https://chess-api.com/v1`;
-
-        console.log(`🧠 IA (${this.nivelDificuldade}) pensando com profundidade ${profundidade}...`);
-
-        try {
-            // Envia o FEN e profundidade via POST
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    fen: fen,
-                    depth: profundidade
-                })
-            });
-
-            const data = await response.json();
-            console.log('🔍 Resposta da API:', data);
-
-            if (data.move) {
-                const moveUCI = data.move.trim(); // Ex: "e2e4"
-                const casaOrigem = moveUCI.substring(0, 2);
-                const casaDestino = moveUCI.substring(2, 4);
-                const peca = $('#' + casaOrigem).find('.piece');
-
-                console.log(`✅ IA (${this.nivelDificuldade}) move: ${casaOrigem} → ${casaDestino}`);
-
-                return {
-                    peca: peca,
-                    casaOrigem: casaOrigem,
-                    casaDestino: casaDestino
-                };
-            } else {
-                console.error('❌ Nenhuma jogada retornada pela API:', data);
-                Swal.fire('Erro', 'A IA não conseguiu calcular uma jogada.', 'error');
-                return null;
-            }
-
-        } catch (error) {
-            console.error('⚠️ Erro ao chamar Chess API:', error);
-            Swal.fire('Erro de Conexão', 'Não foi possível contatar a IA. Verifique sua conexão com a internet.', 'error');
-            return null;
-        }
-    }
+  }
 }
