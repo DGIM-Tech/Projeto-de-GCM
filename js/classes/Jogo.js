@@ -63,6 +63,7 @@ export class Jogo {
             timerProgressBar: true
         });
     }
+
     _tentarMoverPeca(casaAlvo) {
         if (this.clicou !== 1 && this.jogadorAtual.tipo === 'Humano') {
             this._mostrarToast('Selecione uma peça para mover.', 'info');
@@ -102,6 +103,7 @@ export class Jogo {
         console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
+
     _registrarEventos() {
         const self = this;
         $('body').off('click.jogo').on('click.jogo', '.piece', function (e) {
@@ -264,6 +266,7 @@ export class Jogo {
             }
         }
     }
+
     _mostrarVencedorAnimado(vencedor) {
         console.log(`CHAMANDO _mostrarVencedorAnimado: ${vencedor}`);
 
@@ -358,6 +361,7 @@ export class Jogo {
         console.log(`❌ NENHUM MOVIMENTO LEGAL para ${cor}. Total: ${movimentosLegaisTotais}`);
         return movimentosLegaisTotais > 0;
     }
+
     _mostrarEmpate() {
         Swal.fire({
             title: 'Afogamento!',
@@ -478,6 +482,49 @@ export class Jogo {
         });
 
         this.atualizarInterfaceHistorico();
+        this.atualizarInterfaceHistoricoMobile();
+    }
+
+    atualizarInterfaceHistoricoMobile() {
+        const notationMobile = document.getElementById('notationMobile');
+        if (!notationMobile) return;
+
+        let html = `
+            <table class="notation-mobile-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Brancas</th>
+                        <th>Pretas</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (let i = 0; i < this.historicoDeJogadas.length; i += 2) {
+            const moveIndex = (i / 2) + 1;
+            const jogadaBrancas = this.historicoDeJogadas[i]
+                ? this.historicoDeJogadas[i].descricao
+                : '';
+            const jogadaPretas = this.historicoDeJogadas[i + 1]
+                ? this.historicoDeJogadas[i + 1].descricao
+                : '';
+
+            html += `
+                <tr>
+                    <td class="move-number">${moveIndex}.</td>
+                    <td class="brancas-move">${jogadaBrancas}</td>
+                    <td class="pretas-move">${jogadaPretas}</td>
+                </tr>
+            `;
+        }
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        notationMobile.innerHTML = html;
     }
 
     atualizarInterfaceHistorico() {
@@ -729,6 +776,7 @@ export class Jogo {
             console.error(`♜❌ ERRO: Torre não encontrada em ${torreOrigem}`);
         }
     }
+    
     promocaoConcluida(tipoPecaEscolhida) {
         if (!this.movimentoPendente) {
             console.error("Nenhum movimento pendente para promoção!");
