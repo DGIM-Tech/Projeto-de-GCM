@@ -256,27 +256,38 @@
     </div>
     <div id="promotionModal" style="display: none;">
     <div class="modal-content">
-        <h4>Promover Peão para:</h4>
+        <h3>Promover Peão para:</h3>
         <div class="promotion-choices">
-            <div class="promote piece queen-white" data-piece="queen"></div>
-            <div class="promote piece rook-white" data-piece="rook"></div>
-            <div class="promote piece bishop-white" data-piece="bishop"></div>
-            <div class="promote piece knight-white" data-piece="knight"></div>
+
+            <button class="promote" data-piece="queen">
+                ♕ Rainha
+            </button>
+
+            <button class="promote" data-piece="rook">
+                ♖ Torre
+            </button>
+
+            <button class="promote" data-piece="bishop">
+                ♗ Bispo
+            </button>
+
+            <button class="promote" data-piece="knight">
+                ♘ Cavalo
+            </button>
+
         </div>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script type="module" src="js/classes/Jogo.js"></script>
     <script type="module" src="js/index.js"></script>
-    <script src="js/classes/Jogo.js"></script>
     <!-- Chess.js (lógica de xadrez) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
-
-    <!-- Chessboard.js (tabuleiro visual) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
+    s://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
     
     <script>
         const menuToggle = document.getElementById('menuToggle');

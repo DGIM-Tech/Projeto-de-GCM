@@ -40,13 +40,6 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     }
 
     // --- OUTROS MODOS ---
-    if (modo === 'restaurar' && opcoes.estado) {
-        jogoAtual = new Jogo();
-        jogoAtual.carregarEstado(opcoes.estado);
-        window.jogoAtual = jogoAtual;
-        $('.board').data('jogo', jogoAtual);
-        return;
-    }
 
     let jogador1, jogador2;
 
