@@ -850,3 +850,24 @@ body {
     70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
 }
+
+/* CSS para girar tabuleiro e peças JUNTOS */
+.board {
+    transition: transform 0.5s ease;
+    position: relative;
+}
+
+.board.girarPretas {
+    transform: rotate(180deg);
+}
+
+/* IMPORTANTE: Cada casa também gira para as peças ficarem na orientação correta */
+.board.girarPretas .square-board {
+    transform: rotate(180deg);
+}
+
+/* Peças mantêm orientação normal */
+.piece {
+    transition: transform 0.3s ease;
+    transform-origin: center;
+}

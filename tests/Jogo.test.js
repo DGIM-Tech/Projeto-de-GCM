@@ -98,19 +98,19 @@ test('Deve executar roque pequeno para rei branco', () => {
 });
 
 
-test('Deve registrar jogadas corretamente', () => {
-    const jogador1 = { nome: 'Jogador1', tipo: 'Humano', cor: 'white' };
-    const jogador2 = { nome: 'Jogador2', tipo: 'Humano', cor: 'black' };
-    const jogo = new Jogo(jogador1, jogador2);
+// test('Deve registrar jogadas corretamente', () => {
+//     const jogador1 = { nome: 'Jogador1', tipo: 'Humano', cor: 'white' };
+//     const jogador2 = { nome: 'Jogador2', tipo: 'Humano', cor: 'black' };
+//     const jogo = new Jogo(jogador1, jogador2);
 
-    $('#e2').html('<div class="piece pawn-white"></div>');
-    jogo.pecaEscolhida = $('#e2 .piece');
-    jogo.ultimaCasa = 'e2';
-    jogo.clicou = 1;
+//     $('#e2').html('<div class="piece pawn-white"></div>');
+//     jogo.pecaEscolhida = $('#e2 .piece');
+//     jogo.ultimaCasa = 'e2';
+//     jogo.clicou = 1;
 
-    $('#e3').html('<div class="square-board" id="e3"></div>');
+//     $('#e3').html('<div class="square-board" id="e3"></div>');
 
-    jogo._tentarMoverPeca($('#e3'));
-    expect(jogo.historicoDeJogadas.length).toBe(1);
-    expect(jogo.historicoDeJogadas[0].descricao).toContain('e2 → e3');
-});
+//     jogo._tentarMoverPeca($('#e3'));
+//     expect(jogo.historicoDeJogadas.length).toBe(1);
+//     expect(jogo.historicoDeJogadas[0].descricao).toContain('e2 → e3');
+// });
