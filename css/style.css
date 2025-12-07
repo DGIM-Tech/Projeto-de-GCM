@@ -871,3 +871,37 @@ body {
     transition: transform 0.3s ease;
     transform-origin: center;
 }
+.board-wrapper {
+    transition: transform 0.5s;
+}
+
+.board-wrapper.girarPretas .board {
+    transform: rotate(180deg);
+}
+
+.board-wrapper {
+    position: relative;
+    transition: transform 0.5s ease;
+    transform-origin: center;
+}
+
+.board-wrapper.girarPretas {
+    transform: rotate(180deg);
+}
+
+/* IMPORTANTE: As labels devem permanecer na orientação correta */
+.letters-top, .letters-bottom, .numbers-left, .numbers-right {
+    transition: transform 0.5s ease;
+}
+
+.board-wrapper.girarPretas .letters-top,
+.board-wrapper.girarPretas .letters-bottom,
+.board-wrapper.girarPretas .numbers-left,
+.board-wrapper.girarPretas .numbers-right {
+    transform: rotate(-180deg); /* Contra-rotação para corrigir orientação */
+}
+
+/* Se você também girar as peças individualmente */
+.board-wrapper.girarPretas .piece {
+    transform: rotate(180deg);
+}

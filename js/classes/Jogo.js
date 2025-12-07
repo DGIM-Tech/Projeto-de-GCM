@@ -25,6 +25,26 @@ export class Jogo {
         this.movimentoPendente = null;
     }
 
+    girarTabuleiro() {
+        const isModoAmigo = this.jogador1.tipo === 'Humano' && this.jogador2.tipo === 'Humano';
+        if (!isModoAmigo) return;
+
+        const boardWrapper = document.querySelector('.board-wrapper');
+        if (!boardWrapper) return;
+
+        if (this.vezDo === 'black') {
+            boardWrapper.classList.add('girarPretas');
+            window.perspectivaPretas = true; // Usando a mesma variável global
+        } else {
+            boardWrapper.classList.remove('girarPretas');
+            window.perspectivaPretas = false;
+        }
+
+        // Chama a função global definida no index.js
+        if (typeof window.atualizarLabels === 'function') {
+            window.atualizarLabels();
+        }
+    }
     iniciar() {
         this.tabuleiro.inicar();
         this._registrarEventos();
@@ -40,6 +60,7 @@ export class Jogo {
             $('.board').addClass('ia-thinking');
             const movimentoIA = await this.jogadorAtual.fazerMovimento(this);
             $('.board').removeClass('ia-thinking');
+
 
             if (movimentoIA) {
                 const { peca, casaOrigem, casaDestino } = movimentoIA;
@@ -96,11 +117,11 @@ export class Jogo {
         const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
 
         if (isPromocao) {
-            console.log("Promoção detectada - pausando turno para escolha da peça");
+            // console.log("Promoção detectada - pausando turno para escolha da peça");
             return;
         }
 
-        console.log("Sem promoção - finalizando turno normalmente");
+        // console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
 
@@ -168,11 +189,11 @@ export class Jogo {
         const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
 
         if (isPromocao) {
-            console.log("Promoção detectada - pausando turno para escolha da peça");
+            // console.log("Promoção detectada - pausando turno para escolha da peça");
             return;
         }
 
-        console.log("Sem promoção - finalizando turno normalmente");
+        // console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
     // continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
@@ -199,10 +220,16 @@ export class Jogo {
             this.jogadorAtual = (this.jogadorAtual === this.jogador1) ? this.jogador2 : this.jogador1;
             this.clicou = 0;
             this.pecaEscolhida = null;
+
+            // 🟢 CHAMADA DO MÉTODO DE ROTAÇÃO AQUI 
+            // Somente no modo 'amigo' (Humano vs Humano)
+            if (this.jogador1.tipo === 'Humano' && this.jogador2.tipo === 'Humano') {
+                this.girarTabuleiro();
+            }
+
             this.proximoTurno();
         }
         // Salva o estado do jogo no cache após cada jogada
-
     }
 
     _verificarCondicoesDeFimDeJogo() {
@@ -344,7 +371,7 @@ export class Jogo {
                 console.log(`Movimentos legais: ${movimentosLegais.length} → ${movimentosLegais.join(', ')}`);
 
                 if (movimentosLegais.length > 0) {
-                    console.log(`✅ ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
+                    // console.log(`✅ ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
                     return true;
                 }
             } catch (error) {
@@ -391,20 +418,20 @@ export class Jogo {
             if (cor === 'white') {
                 if (origem === 'a1') {
                     this.whiteRooksMoved.a1 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre branca 'a1' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre branca 'a1' moveu-se.`);
                 }
                 if (origem === 'h1') {
                     this.whiteRooksMoved.h1 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre branca 'h1' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre branca 'h1' moveu-se.`);
                 }
             } else { // 'black'
                 if (origem === 'a8') {
                     this.blackRooksMoved.a8 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre preta 'a8' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre preta 'a8' moveu-se.`);
                 }
                 if (origem === 'h8') {
                     this.blackRooksMoved.h8 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre preta 'h8' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre preta 'h8' moveu-se.`);
                 }
             }
         }
@@ -770,7 +797,7 @@ export class Jogo {
             console.error(`♜❌ ERRO: Torre não encontrada em ${torreOrigem}`);
         }
     }
-    
+
     promocaoConcluida(tipoPecaEscolhida) {
         if (!this.movimentoPendente) {
             console.error("Nenhum movimento pendente para promoção!");
@@ -889,5 +916,17 @@ export class Jogo {
         }
         notacao += destino;
         return notacao;
+
+
+    }
+    girarTabuleiro() {
+        const board = document.querySelector('.board');
+        if (!board) return;
+
+        if (this.vezDo === 'black') {
+            board.classList.add('girarPretas');
+        } else {
+            board.classList.remove('girarPretas');
+        }
     }
 }

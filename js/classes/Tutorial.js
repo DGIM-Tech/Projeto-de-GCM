@@ -92,6 +92,11 @@ export class Tutorial {
             'mate_pastor': [/* roteiro original */], // Pode manter outros se quiser
             'partida_avancada': partida_xeque_mate_simples // Permite iniciar só a partida
         };
+        
+        // Guardar referências originais para restaurar depois
+        this.originalGirarTabuleiro = null;
+        this.originalVerificarAfogamento = null;
+        this.originalMostrarMensagemAfogamento = null;
     }
 
     iniciar(nomeLicao = 'curso_completo') {
@@ -102,14 +107,98 @@ export class Tutorial {
             return;
         }
 
+        // DESABILITAR GIRO DO TABULEIRO
+        if (this.jogo && this.jogo.girarTabuleiro) {
+            this.originalGirarTabuleiro = this.jogo.girarTabuleiro;
+            this.jogo.girarTabuleiro = function() {
+                console.log("Giro do tabuleiro desabilitado durante o tutorial");
+                return;
+            };
+        }
+        
+        // DESABILITAR VERIFICAÇÃO DE AFOGAMENTO E MENSAGEM
+        this._desabilitarAfogamento();
+
+        // Garantir que o tabuleiro não está girado
+        const boardWrapper = document.querySelector('.board-wrapper');
+        if (boardWrapper) {
+            boardWrapper.classList.remove('girarPretas');
+        }
+
         $('body').off();
+        this.indicePasso = 0;
         this.executarPassoAtual();
+    }
+
+    _desabilitarAfogamento() {
+        // Interceptar a função de verificar afogamento
+        if (this.jogo) {
+            // Se o jogo tem uma função verificarAfogamento, desabilitar
+            if (this.jogo.verificarAfogamento) {
+                this.originalVerificarAfogamento = this.jogo.verificarAfogamento;
+                this.jogo.verificarAfogamento = function() {
+                    console.log("Verificação de afogamento desabilitada durante o tutorial");
+                    return false; // Nunca retorna true para afogamento
+                };
+            }
+            
+            // Interceptar possíveis funções que mostram mensagem de afogamento
+            // Procura por funções que usam Swal.fire para mostrar afogamento
+            this._interceptarSwalFire();
+            
+            // Se houver uma função específica para finalizar partida por afogamento
+            if (window.finalizarPartida) {
+                this.originalMostrarMensagemAfogamento = window.finalizarPartida;
+                window.finalizarPartida = function(mensagem) {
+                    // Se a mensagem contém "afogamento" ou "empate por afogamento", ignorar
+                    if (mensagem && 
+                        (mensagem.toLowerCase().includes('afogamento') || 
+                         mensagem.toLowerCase().includes('empate'))) {
+                        console.log("Mensagem de afogamento ignorada durante o tutorial");
+                        return;
+                    }
+                    // Para outras mensagens, usar a função original
+                    if (this.originalMostrarMensagemAfogamento) {
+                        this.originalMostrarMensagemAfogamento(mensagem);
+                    }
+                }.bind(this);
+            }
+        }
+    }
+
+    _interceptarSwalFire() {
+        // Guardar a função original do Swal
+        if (window.Swal && window.Swal.fire) {
+            const originalSwalFire = window.Swal.fire;
+            
+            window.Swal.fire = function(config) {
+                // Verificar se é uma mensagem de afogamento
+                const title = config.title || '';
+                const text = config.text || '';
+                const html = config.html || '';
+                
+                const mensagemCompleta = title + ' ' + text + ' ' + html;
+                
+                if (mensagemCompleta.toLowerCase().includes('afogamento') ||
+                    mensagemCompleta.toLowerCase().includes('empate') ||
+                    mensagemCompleta.toLowerCase().includes('stalemate')) {
+                    console.log("Mensagem de afogamento bloqueada durante o tutorial:", config.title);
+                    return Promise.resolve({ isConfirmed: false, isDenied: false, dismiss: 'cancel' });
+                }
+                
+                // Para todas as outras chamadas, usar a função original
+                return originalSwalFire.call(this, config);
+            };
+            
+            this.originalSwalFire = originalSwalFire;
+        }
     }
 
     executarPassoAtual() {
         if (this.indicePasso >= this.roteiroAtual.length) {
             console.log("🛡️ Tutorial Finalizado");
-            // A etapa de conclusão já exibe uma mensagem final.
+            // RESTAURAR FUNÇÕES ORIGINAIS
+            this._restaurarFuncoesOriginais();
             return;
         }
         const passo = this.roteiroAtual[this.indicePasso];
@@ -244,6 +333,9 @@ export class Tutorial {
         $('body').off();
         $('.square-board').removeClass('tutorial-source tutorial-dest selected last-move');
 
+        // RESTAURAR FUNÇÕES ORIGINAIS
+        this._restaurarFuncoesOriginais();
+
         Swal.fire({
             title: 'Tutorial Encerrado',
             text: 'O que você deseja fazer agora?',
@@ -313,5 +405,27 @@ export class Tutorial {
             toast: true, position: 'top-end', showConfirmButton: false, timer: 3500,
             timerProgressBar: true, icon: tipo, title: mensagem,
         });
+    }
+    
+    _restaurarFuncoesOriginais() {
+        // RESTAURAR GIRO DO TABULEIRO
+        if (this.originalGirarTabuleiro && this.jogo) {
+            this.jogo.girarTabuleiro = this.originalGirarTabuleiro;
+        }
+        
+        // RESTAURAR VERIFICAÇÃO DE AFOGAMENTO
+        if (this.originalVerificarAfogamento && this.jogo) {
+            this.jogo.verificarAfogamento = this.originalVerificarAfogamento;
+        }
+        
+        // RESTAURAR FUNÇÃO FINALIZAR PARTIDA
+        if (this.originalMostrarMensagemAfogamento && window.finalizarPartida) {
+            window.finalizarPartida = this.originalMostrarMensagemAfogamento;
+        }
+        
+        // RESTAURAR SWAL.FIRE ORIGINAL
+        if (this.originalSwalFire && window.Swal && window.Swal.fire) {
+            window.Swal.fire = this.originalSwalFire;
+        }
     }
 }

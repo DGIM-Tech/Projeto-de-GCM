@@ -7,13 +7,15 @@ import { Tutorial } from './classes/Tutorial.js';
 let jogoAtual = null;
 let ultimaConfiguracao = {};
 
-/** Inicia nova partida */
 function iniciarNovaPartida(modo, opcoes = {}) {
     // Limpa a interface
     $('.board').empty();
     $('.stats .notation').empty();
     $('.capturadas-brancas').empty();
     $('.capturadas-pretas').empty();
+
+    // Reset da perspectiva
+    window.perspectivaPretas = false;
 
     // --- MODO TUTORIAL ---
     if (modo === 'tutorial') {
@@ -32,11 +34,11 @@ function iniciarNovaPartida(modo, opcoes = {}) {
         // Desenha o tabuleiro inicial
         jogoAtual.iniciar();
 
-        // Inicia a Classe Tutorial (O roteiro está DENTRO do arquivo Tutorial.js)
+        // Inicia a Classe Tutorial
         const tutorial = new Tutorial(jogoAtual);
         tutorial.iniciar();
 
-        return; // Sai da função para não carregar lógica de jogo normal
+        return;
     }
 
     // --- OUTROS MODOS ---
@@ -46,9 +48,16 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     if (modo === 'amigo') {
         jogador1 = new Jogador('Jogador 1', 'brancas');
         jogador2 = new Jogador('Jogador 2', 'pretas');
+        
+        // No modo amigo, começa com brancas
+        window.perspectivaPretas = false;
     }
     else if (modo === 'computador') {
         const { nivelDificuldade, corJogador } = opcoes;
+        
+        // Configura perspectiva baseado na escolha do jogador
+        window.perspectivaPretas = (corJogador === 'pretas');
+        
         if (corJogador === 'brancas') {
             jogador1 = new Jogador('Você', 'brancas');
             jogador2 = new JogadorIA('pretas', nivelDificuldade);
@@ -63,6 +72,11 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     window.jogoAtual = jogoAtual;
     $('.board').data('jogo', jogoAtual);
     jogoAtual.iniciar();
+
+    // Atualiza labels imediatamente
+    if (typeof window.atualizarLabels === 'function') {
+        window.atualizarLabels();
+    }
 
     ultimaConfiguracao = { modo, opcoes };
 }
@@ -275,3 +289,4 @@ function atualizarLabels() {
     document.querySelectorAll('.numbers-right span')
         .forEach((el, i) => el.textContent = usarNumeros[i]);
 }
+window.atualizarLabels = atualizarLabels;
