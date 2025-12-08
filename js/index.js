@@ -7,15 +7,13 @@ import { Tutorial } from './classes/Tutorial.js';
 let jogoAtual = null;
 let ultimaConfiguracao = {};
 
+/** Inicia nova partida */
 function iniciarNovaPartida(modo, opcoes = {}) {
     // Limpa a interface
     $('.board').empty();
     $('.stats .notation').empty();
     $('.capturadas-brancas').empty();
     $('.capturadas-pretas').empty();
-
-    // Reset da perspectiva
-    window.perspectivaPretas = false;
 
     // --- MODO TUTORIAL ---
     if (modo === 'tutorial') {
@@ -34,11 +32,11 @@ function iniciarNovaPartida(modo, opcoes = {}) {
         // Desenha o tabuleiro inicial
         jogoAtual.iniciar();
 
-        // Inicia a Classe Tutorial
+        // Inicia a Classe Tutorial (O roteiro está DENTRO do arquivo Tutorial.js)
         const tutorial = new Tutorial(jogoAtual);
         tutorial.iniciar();
 
-        return;
+        return; // Sai da função para não carregar lógica de jogo normal
     }
 
     // --- OUTROS MODOS ---
@@ -48,16 +46,9 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     if (modo === 'amigo') {
         jogador1 = new Jogador('Jogador 1', 'brancas');
         jogador2 = new Jogador('Jogador 2', 'pretas');
-        
-        // No modo amigo, começa com brancas
-        window.perspectivaPretas = false;
     }
     else if (modo === 'computador') {
         const { nivelDificuldade, corJogador } = opcoes;
-        
-        // Configura perspectiva baseado na escolha do jogador
-        window.perspectivaPretas = (corJogador === 'pretas');
-        
         if (corJogador === 'brancas') {
             jogador1 = new Jogador('Você', 'brancas');
             jogador2 = new JogadorIA('pretas', nivelDificuldade);
@@ -72,11 +63,6 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     window.jogoAtual = jogoAtual;
     $('.board').data('jogo', jogoAtual);
     jogoAtual.iniciar();
-
-    // Atualiza labels imediatamente
-    if (typeof window.atualizarLabels === 'function') {
-        window.atualizarLabels();
-    }
 
     ultimaConfiguracao = { modo, opcoes };
 }
@@ -174,31 +160,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 // =====================================================
-                // 1) DEFINIR A PERSPECTIVA AQUI
+                // 1) DEFINIR A PERSPECTIVA
                 // =====================================================
                 window.perspectivaPretas = result.value.corJogador === "pretas";
 
                 // =====================================================
-                // 2) REDESENHAR O TABULEIRO AQUI
+                // 2) REDESENHAR O TABULEIRO
                 // =====================================================
                 if (window.jogo && typeof jogo.printBoard === "function") {
                     jogo.printBoard();
                 }
 
                 // =====================================================
-                // 3) ATUALIZAR AS LETRAS E NÚMEROS AQUI
+                // 3) ATUALIZAR AS LETRAS E NÚMEROS
                 // =====================================================
-                atualizarLabels();   // <<< ESSA LINHA FALTAVA
-
+                atualizarLabels();
 
                 // =====================================================
-                // 4) (Opcional) Aplicar rotação visual por CSS
+                // 4) ROTAÇÃO DO TABULEIRO (APENAS CSS)
                 // =====================================================
                 const boardEl = document.querySelector('.board');
                 if (result.value.corJogador === "brancas") {
                     boardEl.classList.remove("girarPretas");
                 } else {
                     boardEl.classList.add("girarPretas");
+                }
+
+                // =====================================================
+                // 5) REMOVER QUALQUER ROTAÇÃO NAS PEÇAS (MOBILE)
+                // Isso garante que apenas o CSS do tabuleiro controle a rotação
+                // =====================================================
+                if (window.innerWidth <= 768) {
+                    // Remove qualquer transformação inline das peças
+                    const pecas = document.querySelectorAll('.piece');
+                    pecas.forEach(peca => {
+                        peca.style.transform = '';
+                    });
                 }
 
             } else {

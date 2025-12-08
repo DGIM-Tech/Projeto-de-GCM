@@ -25,26 +25,6 @@ export class Jogo {
         this.movimentoPendente = null;
     }
 
-    girarTabuleiro() {
-        const isModoAmigo = this.jogador1.tipo === 'Humano' && this.jogador2.tipo === 'Humano';
-        if (!isModoAmigo) return;
-
-        const boardWrapper = document.querySelector('.board-wrapper');
-        if (!boardWrapper) return;
-
-        if (this.vezDo === 'black') {
-            boardWrapper.classList.add('girarPretas');
-            window.perspectivaPretas = true; // Usando a mesma variável global
-        } else {
-            boardWrapper.classList.remove('girarPretas');
-            window.perspectivaPretas = false;
-        }
-
-        // Chama a função global definida no index.js
-        if (typeof window.atualizarLabels === 'function') {
-            window.atualizarLabels();
-        }
-    }
     iniciar() {
         this.tabuleiro.inicar();
         this._registrarEventos();
@@ -919,14 +899,158 @@ export class Jogo {
 
 
     }
-    girarTabuleiro() {
-        const board = document.querySelector('.board');
-        if (!board) return;
+    girarPecasMobile() {
+        const pecas = document.querySelectorAll('.piece');
+        if (!pecas.length) return;
 
-        if (this.vezDo === 'black') {
+        // Verifica se está no modo mobile
+        if (window.innerWidth <= 768) {
+            // Alterna a perspectiva baseada na vez
+            const isGirandoParaPretas = (this.vezDo === 'black');
+
+            pecas.forEach(peca => {
+                if (isGirandoParaPretas) {
+                    peca.style.transform = 'rotate(180deg)';
+                } else {
+                    peca.style.transform = 'rotate(0deg)';
+                }
+            });
+
+            // Atualiza labels também
+            this._atualizarLabelsTutorial(isGirandoParaPretas);
+        }
+    }
+
+    // Modifique o girarTabuleiro original para não girar no mobile
+girarTabuleiro() {
+    const board = document.querySelector('.board');
+    if (!board) return;
+
+    // Alterna a perspectiva
+    const isGirandoParaPretas = (this.vezDo === 'black');
+
+    // No mobile, gira apenas peças
+    if (window.innerWidth <= 768) {
+        this.girarPecasMobile(isGirandoParaPretas);
+    } 
+    // No desktop, gira tabuleiro e reseta peças
+    else {
+        // Remove qualquer transformação nas peças (reset do mobile)
+        this._resetarTransformacoesPecas();
+        
+        // Gira o tabuleiro normalmente
+        if (isGirandoParaPretas) {
             board.classList.add('girarPretas');
         } else {
             board.classList.remove('girarPretas');
         }
+    }
+
+    // Sempre atualiza labels
+    this._atualizarLabelsTutorial(isGirandoParaPretas);
+}
+
+// Função para girar apenas as peças no mobile
+girarPecasMobile(isGirandoParaPretas) {
+    const pecas = document.querySelectorAll('.piece');
+    if (!pecas.length) return;
+    
+    // Remove classe girarPretas do tabuleiro no mobile
+    const board = document.querySelector('.board');
+    if (board) {
+        board.classList.remove('girarPretas');
+    }
+    
+    // Remove transformação das casas no mobile
+    document.querySelectorAll('.square-board').forEach(casa => {
+        casa.style.transform = '';
+    });
+    
+    // Aplica rotação nas peças
+    pecas.forEach(peca => {
+        peca.style.transform = isGirandoParaPretas ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+}
+
+// Função para resetar transformações das peças (quando volta para desktop)
+_resetarTransformacoesPecas() {
+    const pecas = document.querySelectorAll('.piece');
+    pecas.forEach(peca => {
+        peca.style.transform = ''; // Remove transformação inline
+    });
+}
+
+// Função para girar peças quando o menu abre no mobile
+ajustarOrientacaoPecasMobile() {
+    const menuLateral = document.getElementById('menuLateral');
+    if (!menuLateral) return;
+
+    const pecas = document.querySelectorAll('.piece');
+    if (!pecas.length) return;
+
+    // Só aplica no mobile
+    if (window.innerWidth <= 768) {
+        const menuAberto = menuLateral.classList.contains('aberto');
+        const isGirandoParaPretas = (this.vezDo === 'black');
+        
+        // Se menu está abrindo, salva estado atual
+        if (menuAberto) {
+            pecas.forEach(peca => {
+                peca.dataset.originalTransform = peca.style.transform || '';
+            });
+        }
+        
+        pecas.forEach(peca => {
+            if (menuAberto) {
+                // Menu aberto: inverte a orientação
+                if (isGirandoParaPretas) {
+                    peca.style.transform = 'rotate(0deg)';
+                } else {
+                    peca.style.transform = 'rotate(180deg)';
+                }
+            } else {
+                // Menu fechado: restaura orientação original
+                const originalTransform = peca.dataset.originalTransform;
+                if (originalTransform !== undefined) {
+                    peca.style.transform = originalTransform;
+                } else {
+                    peca.style.transform = isGirandoParaPretas ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            }
+        });
+    } 
+    // No desktop, garante que peças estão sem transformação
+    else {
+        this._resetarTransformacoesPecas();
+    }
+}
+
+ 
+
+
+    _atualizarLabelsTutorial(perspectivaPretas) {
+        const letrasNormal = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const letrasInvertido = [...letrasNormal].reverse();
+
+        const numerosNormal = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        const numerosInvertido = [...numerosNormal].reverse();
+
+        const usarLetras = perspectivaPretas ? letrasInvertido : letrasNormal;
+
+        const usarNumeros = perspectivaPretas ? numerosInvertido : numerosNormal;
+
+        // Atualiza as letras superior e inferior
+        document.querySelectorAll('.letters-top span')
+            .forEach((el, i) => el.textContent = usarLetras[i]);
+
+        document.querySelectorAll('.letters-bottom span')
+            .forEach((el, i) => el.textContent = usarLetras[i]);
+
+        // Atualiza os números laterais
+        document.querySelectorAll('.numbers-left span')
+            .forEach((el, i) => el.textContent = usarNumeros[i]);
+
+        document.querySelectorAll('.numbers-right span')
+            .forEach((el, i) => el.textContent = usarNumeros[i]);
     }
 }
