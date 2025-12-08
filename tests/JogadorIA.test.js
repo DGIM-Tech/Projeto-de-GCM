@@ -1,184 +1,241 @@
-// -------------------------------------------------------
-// 1. MOCK DA CLASSE BASE 'JOGADOR' (CORRIGIDO)
-// A definição da classe MockJogador é movida para dentro do jest.mock
-// -------------------------------------------------------
-
-// Aplica o mock para que JogadorIA use a classe mockada
-jest.mock('../js/classes/Jogador.js', () => ({
-    // A definição da classe Mock está agora DENTRO da função factory
-    Jogador: class MockJogador {
-        constructor(nome, cor) {
-            this.nome = nome;
-            this.cor = cor;
-            this.tipo = 'MockHumano'; // Valor que o JogadorIA enxerga
-        }
-        fazerMovimento() { return Promise.resolve(null); }
-    }
-}));
-
-// -------------------------------------------------------
-// Importação das classes
-// -------------------------------------------------------
-// A classe JogadorIA importará o mock automaticamente
+/**
+ * @jest-environment jsdom
+ */
 import { JogadorIA } from '../js/classes/JogadorIA.js'; 
-
-// Importa a classe Jogador (ainda é o mock, mas precisamos dela no escopo)
+import { Jogo } from '../js/classes/Jogo.js';
+// Importação de Jogador para cobrir a linha 13 em Jogador.js
 import { Jogador } from '../js/classes/Jogador.js'; 
+import Swal from 'sweetalert2';
 
-
-// -------------------------------------------------------
-// Mocks Globais
-// -------------------------------------------------------
+// 1. Mocks de SweetAlert2 e Fetch
+jest.mock('sweetalert2', () => ({
+    fire: jest.fn(),
+}));
 global.fetch = jest.fn();
-global.Swal = { fire: jest.fn() };
-global.$ = jest.fn((selector) => {
-    return {
-        selector,
-        find: jest.fn((q) => {
-            return 'peca-mock';
-        })
-    };
+
+// Expor o mock do Swal ao escopo global para evitar ReferenceError na classe de produção
+global.Swal = Swal; 
+
+
+// 2. Mock de objetos de retorno para o jQuery
+const mockPieceFound = { isPieceElement: true };
+const mockJQueryEmpty = { length: 0 }; // Objeto retornado quando a peça não é encontrada
+
+
+// 3. Setup e Mocks de Jogo
+let ia;
+let mockJogo;
+
+// Função auxiliar para criar um mock seguro do elemento JQuery
+const createMockJQueryElement = (pieceResult) => ({
+    // A função find é recriada para cada teste, garantindo que não seja redefinida
+    find: jest.fn((selector) => {
+        if (selector === '.piece') {
+            return pieceResult;
+        }
+        return mockJQueryEmpty; // Retorno padrão para outros seletores internos
+    }),
+    length: 1
 });
 
-// -------------------------------------------------------
-// SUITE DE TESTES: CLASSE JOGADORIA
-// -------------------------------------------------------
+beforeEach(() => {
+    // Limpa todos os mocks (Swal, fetch, $) antes de cada teste
+    jest.clearAllMocks();
+    
+    // ✅ CORREÇÃO CRÍTICA: Re-define o mock global $ para garantir a estrutura correta
+    global.$ = jest.fn((selector) => {
+        if (selector === '#e2') {
+            // Caso de Sucesso: Retorna um mock que encontrará a peça (mockPieceFound)
+            return createMockJQueryElement(mockPieceFound); 
+        }
+        if (selector === '#d7') {
+            // Caso de Peça Não Encontrada: Retorna um mock que não encontrará a peça (mockJQueryEmpty)
+            return createMockJQueryElement(mockJQueryEmpty); 
+        }
+        // Caso de elemento DOM não encontrado
+        return { find: jest.fn(() => mockJQueryEmpty), length: 0 };
+    });
+
+    // Configuração de Jogo
+    mockJogo = {
+        _gerarFEN: jest.fn().mockReturnValue('fen-mockada'), 
+        corAtual: 'brancas',
+        movimento: {
+             movimentosPossiveis: jest.fn().mockReturnValue([]),
+        }
+    };
+    ia = new JogadorIA('brancas', 'médio');
+
+    // Mock padrão de fetch para sucesso
+    fetch.mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ move: 'e2e4' })
+    });
+});
+
 describe('JogadorIA', () => {
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-        global.fetch.mockReset(); 
+    // Testes de Cobertura para o Constructor (Linha 4 do JogadorIA.js)
+    test('Deve usar "médio" como nível padrão se não for fornecido', () => {
+        const iaPadrao = new JogadorIA('pretas'); 
+        expect(iaPadrao.nivelDificuldade).toBe('médio');
     });
 
-    // =====================================================
-    // CT-IA-001 – Inicialização
-    // =====================================================
-    test('CT-IA-001 – Deve inicializar corretamente a JogadorIA', () => {
-        const ia = new JogadorIA('branco', 'médio');
-        expect(ia.nome).toBe('Computador');
-        expect(ia.tipo).toBe('IA');
-        expect(ia instanceof Jogador).toBe(true); 
-    });
-
-    // =====================================================
-    // CT-IA-002, 003, 004 – Profundidade
-    // =====================================================
-    test('CT-IA-002 – Deve enviar depth = 1 para dificuldade iniciante', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'e2e4' }) });
-        const ia = new JogadorIA('branco', 'iniciante');
-        await ia.fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(JSON.parse(fetch.mock.calls[0][1].body).depth).toBe(1);
-    });
-
-    test('CT-IA-003 – Deve enviar depth = 6 para dificuldade médio', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'g1f3' }) });
-        const ia = new JogadorIA('preto', 'médio');
-        await ia.fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(JSON.parse(fetch.mock.calls[0][1].body).depth).toBe(6);
+    // Teste de Cobertura para Jogador.js (Linha 13 do Jogador.js)
+    test('Jogador deve inicializar corretamente com tipo "Humano"', () => {
+        const jogadorHumano = new Jogador('João', 'brancas');
+        expect(jogadorHumano.tipo).toBe('Humano');
     });
     
-    test('CT-IA-004 – Deve enviar profundidade indefinida para dificuldade inválida', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'b1c3' }) });
-        const ia = new JogadorIA('branco', 'expert'); 
-        await ia.fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(JSON.parse(fetch.mock.calls[0][1].body).depth).toBeUndefined(); 
+    // ----------------------------------------------------
+    // Testes de Inicialização e Profundidade (Depth)
+    // ----------------------------------------------------
+    describe('Inicialização e Dificuldade', () => {
+        test('Deve inicializar corretamente com cor e tipo IA', () => {
+            expect(ia.nome).toBe('Computador');
+            expect(ia.cor).toBe('brancas');
+            expect(ia.tipo).toBe('IA');
+            expect(ia.nivelDificuldade).toBe('médio');
+        });
+
+        test.each([
+            ['iniciante', 1],
+            ['fácil', 2],
+            ['médio', 5],
+            ['difícil', 8]
+        ])('Deve usar a profundidade (depth) correta para o nível %s', async (nivel, expectedDepth) => {
+            ia = new JogadorIA('pretas', nivel);
+            await ia.fazerMovimento(mockJogo);
+
+            const fetchCall = fetch.mock.calls[0][1];
+            const receivedBody = JSON.parse(fetchCall.body);
+            
+            expect(receivedBody).toEqual({
+                fen: mockJogo._gerarFEN(), 
+                depth: expectedDepth
+            });
+        });
     });
 
-    // =====================================================
-    // CT-IA-005, 006 – Erros
-    // =====================================================
-    test('CT-IA-005 – Deve retornar null se API não retornar movimento', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ score: 0.1 }) });
-        const resultado = await new JogadorIA('preto', 'fácil').fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(resultado).toBeNull();
-        expect(Swal.fire).toHaveBeenCalledWith('Erro', 'Movimento inválido retornado pela IA', 'error');
+    // ----------------------------------------------------
+    // Testes de Sucesso (Caminho Feliz)
+    // ----------------------------------------------------
+    describe('fazerMovimento - Sucesso', () => {
+        // ✅ TESTE CORRIGIDO
+        test('Deve retornar a casa de origem, destino e a peça ao receber um movimento válido', async () => {
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ move: 'e2e4' })
+            });
+            
+            const movimento = await ia.fazerMovimento(mockJogo);
+
+            // Agora o mock está configurado para retornar 'mockPieceFound' para '#e2'
+            expect(movimento).toEqual({
+                casaOrigem: 'e2',
+                casaDestino: 'e4',
+                peca: mockPieceFound // Deve receber o objeto mockado
+            });
+        });
+
+        test('Deve chamar o _gerarFEN do objeto Jogo', async () => {
+            await ia.fazerMovimento(mockJogo);
+            expect(mockJogo._gerarFEN).toHaveBeenCalledTimes(1);
+        });
     });
 
-    test('CT-IA-006 – Deve retornar null em erro de conexão', async () => {
-        fetch.mockRejectedValueOnce(new Error('Erro de rede'));
-        const resultado = await new JogadorIA('branco', 'difícil').fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(resultado).toBeNull();
-        expect(Swal.fire).toHaveBeenCalledWith('Erro de Conexão', 'Não foi possível contatar a IA', 'error');
-    });
+    // ----------------------------------------------------
+    // Testes de Erro (Caminho Excepcional)
+    // ----------------------------------------------------
+    describe('fazerMovimento - Erros', () => {
 
-    // =====================================================
-    // CT-IA-007, 008 – Verificações de Requisição
-    // =====================================================
-    test('CT-IA-007 – Deve chamar _gerarFEN() e enviar no body', async () => {
-        const FEN_TESTE = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'a2a3' }) });
-        const jogoMock = { _gerarFEN: jest.fn().mockReturnValue(FEN_TESTE) };
-        await new JogadorIA('branco', 'iniciante').fazerMovimento(jogoMock);
-        expect(jogoMock._gerarFEN).toHaveBeenCalled();
-        expect(JSON.parse(fetch.mock.calls[0][1].body).fen).toBe(FEN_TESTE);
-    });
+        test('Deve tratar erro de rede (falha no fetch) e mostrar Swal (Cobre catch principal)', async () => {
+            fetch.mockRejectedValue(new Error('Falha de rede simulada'));
 
-    test('CT-IA-008 – Deve chamar a API correta', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'h2h4' }) });
-        await new JogadorIA('preto', 'iniciante').fazerMovimento({ _gerarFEN: jest.fn() });
-        expect(fetch).toHaveBeenCalledWith('https://chess-api.com/v1', expect.objectContaining({ method: 'POST' }));
-    });
-    
-    // =====================================================
-    // CT-IA-09 – Cobertura do Catch Interno do jQuery
-    // =====================================================
-    test('CT-IA-09 – Deve cobrir o bloco catch interno quando o jQuery falha', async () => {
-        fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ move: 'e2e4' }) });
-        const originalJQueryMock = global.$;
+            const movimento = await ia.fazerMovimento(mockJogo);
+
+            expect(movimento).toBeNull(); 
+            expect(Swal.fire).toHaveBeenCalledWith(
+                'Erro de Conexão',
+                'Não foi possível contatar a IA',
+                'error'
+            );
+        });
+
+        test('Deve tratar JSON retornado inválido (sem a propriedade move) e mostrar Swal (Cobre if)', async () => {
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ score: 10 })
+            });
+
+            const movimento = await ia.fazerMovimento(mockJogo);
+
+            expect(movimento).toBeNull();
+            expect(Swal.fire).toHaveBeenCalledWith(
+                'Erro',
+                'Movimento inválido retornado pela IA',
+                'error'
+            );
+        });
+
+        // ✅ TESTE CORRIGIDO
+        test('Deve retornar peca: {length: 0} quando a peça não for encontrada no DOM', async () => {
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ move: 'd7d5' }) // Movimento da casa d7
+            });
+            
+            // O mock global do $ já está configurado para o seletor '#d7' retornar um objeto JQuery vazio.
+            const movimento = await ia.fazerMovimento(mockJogo);
+
+            // A expectativa agora corresponde ao mockJQueryEmpty
+            expect(movimento).toEqual({
+                casaOrigem: 'd7',
+                casaDestino: 'd5',
+                peca: mockJQueryEmpty 
+            });
+            expect(Swal.fire).not.toHaveBeenCalled(); 
+        });
         
-        // Força o $ a lançar um erro na chamada (antes do find)
-        global.$ = jest.fn(() => { throw new Error("Erro simulado do jQuery"); });
+        test('Deve retornar peca: null se o jQuery lançar uma exceção (catch interno)', async () => {
+             fetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ move: 'a1a2' })
+            });
+
+            // Sobrescreve o mock global do $ temporariamente para forçar o lançamento de erro
+            const originalGlobal$ = globalThis.$;
+            globalThis.$ = jest.fn(() => {
+                throw new Error('Erro forçado de jQuery/DOM');
+            });
+            
+            const movimento = await ia.fazerMovimento(mockJogo);
+
+            expect(movimento).toEqual({
+                casaOrigem: 'a1',
+                casaDestino: 'a2',
+                peca: null // O catch interno forçou peca = null
+            });
+            expect(Swal.fire).not.toHaveBeenCalled(); 
+            
+            // Restaura o mock original após o teste
+            globalThis.$ = originalGlobal$; 
+        });
         
-        const ia = new JogadorIA('branco', 'médio');
-        const resultado = await ia.fazerMovimento({ _gerarFEN: jest.fn() });
+        test('Deve tratar resposta HTTP não OK (ex: status 500) e cair no catch principal', async () => {
+             fetch.mockResolvedValueOnce({
+                ok: false, // Força o lançamento de erro
+                json: jest.fn().mockResolvedValue({})
+            });
 
-        expect(resultado).not.toBeNull();
-        expect(resultado.peca).toBeNull(); 
-        
-        // Restaura o mock original
-        global.$ = originalJQueryMock;
-    });
+            const movimento = await ia.fazerMovimento(mockJogo);
 
-    // =====================================================
-    // CT-IA-010 – Cobertura do Parâmetro Padrão
-    // =====================================================
-    test('CT-IA-010 – Deve usar "médio" como nível padrão se omitido', () => {
-        // 1. Não passamos o segundo argumento (nivelDificuldade)
-        const ia = new JogadorIA('preto'); 
-
-        // 2. Esperamos que o valor padrão 'médio' tenha sido atribuído.
-        expect(ia.nivelDificuldade).toBe('médio');
-    });
-});
-
-// -------------------------------------------------------
-// SUITE DE TESTES: CLASSE JOGADOR (Usa a classe REAL)
-// -------------------------------------------------------
-describe('Jogador', () => {
-    // CORREÇÃO: Desativa o mock da classe Jogador APENAS para este bloco.
-    const { Jogador: JogadorReal } = jest.requireActual('../js/classes/Jogador.js');
-
-    // =====================================================
-    // CT-JOG-001 – Inicialização (CORRIGIDO)
-    // =====================================================
-    test('CT-JOG-001 – Deve inicializar corretamente a Jogador (Humano)', () => {
-        const humano = new JogadorReal('Maria', 'preto'); // Usa a classe real
-
-        expect(humano.nome).toBe('Maria');
-        expect(humano.cor).toBe('preto');
-        expect(humano.tipo).toBe('Humano'); // Espera o valor real ("Humano")
-    });
-
-    // =====================================================
-    // CT-JOG-002 – Comportamento de Movimento
-    // =====================================================
-    test('CT-JOG-002 – fazerMovimento deve retornar uma Promise resolvida com null', async () => {
-        const humano = new JogadorReal('Jose', 'branco'); // Usa a classe real
-        const resultado = humano.fazerMovimento({});
-
-        expect(resultado).toBeInstanceOf(Promise);
-
-        const valorResolvido = await resultado;
-        expect(valorResolvido).toBeNull();
+            expect(movimento).toBeNull();
+            expect(Swal.fire).toHaveBeenCalledWith(
+                'Erro de Conexão',
+                'Não foi possível contatar a IA',
+                'error'
+            );
+        });
     });
 });

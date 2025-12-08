@@ -28,7 +28,7 @@ export class JogadorIA extends Jogador {
 
       // Se a resposta HTTP não for 2xx, o fluxo deve ir para o catch (embora fetch só lance erro em falha de rede)
       // Se você quiser tratar erros HTTP aqui, adicione:
-      // if (!response.ok) throw new Error("API retornou erro HTTP"); 
+      if (!response.ok) throw new Error("API retornou erro HTTP"); 
       
       const data = await response.json();
 
