@@ -179,9 +179,12 @@ body {
 		transform: scale(0.9);
 	}
 
-	.letters-top, .letters-bottom, .board {
+	.letters-top,
+	.letters-bottom,
+	.board {
 		width: 450px;
 	}
+
 	.board {
 		grid-template-columns: repeat(8, 56px);
 		grid-template-rows: repeat(8, 56px);
@@ -189,7 +192,8 @@ body {
 		height: 448px;
 	}
 
-	.numbers-left, .numbers-right {
+	.numbers-left,
+	.numbers-right {
 		grid-template-rows: repeat(8, 56px);
 	}
 
@@ -232,13 +236,15 @@ body {
 		height: 360px;
 	}
 
-	.letters-top, .letters-bottom {
+	.letters-top,
+	.letters-bottom {
 		width: 360px;
 		grid-template-columns: repeat(8, 45px);
 		font-size: 12px;
 	}
 
-	.numbers-left, .numbers-right {
+	.numbers-left,
+	.numbers-right {
 		grid-template-rows: repeat(8, 45px);
 		font-size: 12px;
 	}
@@ -279,13 +285,15 @@ body {
 		height: 320px;
 	}
 
-	.letters-top, .letters-bottom {
+	.letters-top,
+	.letters-bottom {
 		width: 320px;
 		grid-template-columns: repeat(8, 40px);
 		font-size: 10px;
 	}
 
-	.numbers-left, .numbers-right {
+	.numbers-left,
+	.numbers-right {
 		grid-template-rows: repeat(8, 40px);
 		font-size: 10px;
 	}
@@ -319,7 +327,7 @@ body {
 	padding: 10px 14px;
 	font-size: 1.4rem;
 	cursor: pointer;
-	box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .menu-lateral {
@@ -331,7 +339,7 @@ body {
 	max-width: 320px;
 	height: 100vh;
 	background: #fff;
-	box-shadow: -3px 0 10px rgba(0,0,0,0.3);
+	box-shadow: -3px 0 10px rgba(0, 0, 0, 0.3);
 	z-index: 2500;
 	padding: 20px;
 	transform: translateX(100%);
@@ -798,11 +806,12 @@ body {
 	background: rgba(0, 0, 0, 0.7);
 	z-index: 9998;
 }
+
 .swal-xeque-mate {
-  font-size: 1.2rem;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+	font-size: 1.2rem;
+	padding: 1.5rem;
+	border-radius: 1rem;
+	box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
 }
 
 .player {
@@ -814,39 +823,99 @@ body {
 /* Destaque visual do tutorial */
 /* Peça de Origem (O que mover) - Amarelo Pulsante */
 .tutorial-source {
-    background-color: rgba(255, 215, 0, 0.7) !important; /* Amarelo Ouro */
-    border: 3px solid #ffd700 !important;
-    box-shadow: 0 0 15px #ffd700;
-    cursor: pointer;
-    animation: pulse-yellow 1.5s infinite;
-    z-index: 50;
+	background-color: rgba(255, 215, 0, 0.7) !important;
+	/* Amarelo Ouro */
+	border: 3px solid #ffd700 !important;
+	box-shadow: 0 0 15px #ffd700;
+	cursor: pointer;
+	animation: pulse-yellow 1.5s infinite;
+	z-index: 50;
 }
 
 /* Destino (Onde soltar) - Verde com Indicador */
 .tutorial-dest {
-    background-color: rgba(50, 205, 50, 0.6) !important; /* Verde Lima */
-    border: 3px dashed #32cd32 !important;
-    box-shadow: inset 0 0 10px #32cd32;
-    cursor: pointer;
-    position: relative;
+	background-color: rgba(50, 205, 50, 0.6) !important;
+	/* Verde Lima */
+	border: 3px dashed #32cd32 !important;
+	box-shadow: inset 0 0 10px #32cd32;
+	cursor: pointer;
+	position: relative;
 }
 
 /* Adiciona uma "bolinha" no centro do destino para facilitar */
 .tutorial-dest::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    background-color: rgba(0, 100, 0, 0.5);
-    border-radius: 50%;
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 20px;
+	height: 20px;
+	background-color: rgba(0, 100, 0, 0.5);
+	border-radius: 50%;
 }
 
 /* Animação para chamar atenção */
 @keyframes pulse-yellow {
-    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+	0% {
+		box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+	}
+
+	70% {
+		box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+	}
+
+	100% {
+		box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+	}
+}
+
+/* ===== CSS UNIFICADO PARA GIRO ===== */
+/* Contêiner principal */
+.board {
+	transition: transform 0.5s ease;
+	position: relative;
+}
+
+/* Quando o tabuleiro gira para perspectiva das pretas */
+.board.girarPretas {
+	transform: rotate(180deg);
+}
+
+/* As casas giram para as peças ficarem na orientação correta */
+.board.girarPretas .square-board {
+	transform: rotate(180deg);
+}
+
+/* Labels giram na direção oposta para ficarem legíveis */
+.board.girarPretas~.letters-top,
+.board.girarPretas~.letters-bottom,
+.board.girarPretas~.numbers-left,
+.board.girarPretas~.numbers-right {
+	transform: rotate(-180deg);
+}
+
+/* Peças com transição suave */
+.piece {
+	transition: transform 0.3s ease;
+	transform-origin: center;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+	/* No mobile, mantemos as mesmas regras mas podemos ajustar se necessário */
+
+	/* Se quiser que o JS controle as peças, permita transformações inline */
+	.piece {
+		/* Permite que o JS aplique transformações */
+	}
+}
+
+/* ===== DESKTOP ===== */
+@media (min-width: 769px) {
+
+	/* Remove transformações inline que podem ter sido aplicadas no mobile */
+	.piece {
+		transform: none !important;
+	}
 }

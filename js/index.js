@@ -22,13 +22,13 @@ function iniciarNovaPartida(modo, opcoes = {}) {
         // Cria jogadores fictícios para o motor do jogo funcionar
         const p1 = new Jogador('Aluno', 'brancas');
         const p2 = new Jogador('Professor', 'pretas');
-        
+
         jogoAtual = new Jogo(p1, p2);
 
         // Configura globais
         window.jogoAtual = jogoAtual;
         $('.board').data('jogo', jogoAtual);
-        
+
         // Desenha o tabuleiro inicial
         jogoAtual.iniciar();
 
@@ -40,13 +40,6 @@ function iniciarNovaPartida(modo, opcoes = {}) {
     }
 
     // --- OUTROS MODOS ---
-    if (modo === 'restaurar' && opcoes.estado) {
-        jogoAtual = new Jogo();
-        jogoAtual.carregarEstado(opcoes.estado);
-        window.jogoAtual = jogoAtual;
-        $('.board').data('jogo', jogoAtual);
-        return;
-    }
 
     let jogador1, jogador2;
 
@@ -117,38 +110,102 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Botão Computador
     document.getElementById('btnComputador').addEventListener('click', () => {
         telaInicial.style.display = 'none';
+
         Swal.fire({
-            title: '<strong>Configurar Partida</strong>',
-            icon: 'info',
+            title: '⚙️ Configurar Partida',
             html: `
-                <h3>Dificuldade da IA:</h3>
-                <label><input type="radio" name="dificuldade" value="iniciante" checked> 👶 Iniciante</label>
-                <label><input type="radio" name="dificuldade" value="fácil"> 🙂 Fácil</label>
-                <label><input type="radio" name="dificuldade" value="médio"> 🤔 Médio</label>
-                <label><input type="radio" name="dificuldade" value="difícil"> 😈 Difícil</label>
-                <h3>Escolha sua cor:</h3>
-                <label><input type="radio" name="cor" value="brancas" checked> ⚪ Brancas</label>
-                <label><input type="radio" name="cor" value="pretas"> ⚫ Pretas</label>
-            `,
+        <div class="config-modal">
+
+            <div class="config-section">
+                <h4>Dificuldade da IA</h4>
+                <div class="config-options">
+                    <label><input type="radio" name="dificuldade" value="iniciante" checked> Iniciante</label>
+                    <label><input type="radio" name="dificuldade" value="fácil">  Fácil</label>
+                    <label><input type="radio" name="dificuldade" value="médio">  Médio</label>
+                    <label><input type="radio" name="dificuldade" value="difícil">  Difícil</label>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4>Escolha sua Cor</h4>
+                <div class="config-options">
+                    <label><input type="radio" name="cor" value="brancas" checked> ⚪ Brancas</label>
+                    <label><input type="radio" name="cor" value="pretas"> ⚫ Pretas</label>
+                </div>
+            </div>
+
+        </div>
+        `,
+            width: 420,
+            background: "#f7f7f7",
             showCancelButton: true,
-            confirmButtonText: '▶️ Jogar!',
-            cancelButtonText: 'Cancelar',
+            confirmButtonText: '🎮 Jogar!',
+            cancelButtonText: '❌ Cancelar',
+            confirmButtonColor: "#0E7886",
+            cancelButtonColor: "#555",
+            borderRadius: "12px",
+            allowOutsideClick: false,
             preConfirm: () => ({
                 dificuldade: document.querySelector('input[name="dificuldade"]:checked').value,
                 corJogador: document.querySelector('input[name="cor"]:checked').value
             })
         }).then((result) => {
             if (result.isConfirmed) {
+
                 mostrarInterfaceJogo();
+
                 iniciarNovaPartida('computador', {
                     nivelDificuldade: result.value.dificuldade,
                     corJogador: result.value.corJogador
                 });
+
+                // =====================================================
+                // 1) DEFINIR A PERSPECTIVA
+                // =====================================================
+                window.perspectivaPretas = result.value.corJogador === "pretas";
+
+                // =====================================================
+                // 2) REDESENHAR O TABULEIRO
+                // =====================================================
+                if (window.jogo && typeof jogo.printBoard === "function") {
+                    jogo.printBoard();
+                }
+
+                // =====================================================
+                // 3) ATUALIZAR AS LETRAS E NÚMEROS
+                // =====================================================
+                atualizarLabels();
+
+                // =====================================================
+                // 4) ROTAÇÃO DO TABULEIRO (APENAS CSS)
+                // =====================================================
+                const boardEl = document.querySelector('.board');
+                if (result.value.corJogador === "brancas") {
+                    boardEl.classList.remove("girarPretas");
+                } else {
+                    boardEl.classList.add("girarPretas");
+                }
+
+                // =====================================================
+                // 5) REMOVER QUALQUER ROTAÇÃO NAS PEÇAS (MOBILE)
+                // Isso garante que apenas o CSS do tabuleiro controle a rotação
+                // =====================================================
+                if (window.innerWidth <= 768) {
+                    // Remove qualquer transformação inline das peças
+                    const pecas = document.querySelectorAll('.piece');
+                    pecas.forEach(peca => {
+                        peca.style.transform = '';
+                    });
+                }
+
             } else {
                 telaInicial.style.display = 'flex';
             }
         });
     });
+
+
+
 
     // 3. Botão Tutorial (CORRIGIDO)
     document.getElementById('btnTutorial').addEventListener('click', () => {
@@ -159,17 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Botões de Controle
     document.getElementById('btnDesistir').addEventListener('click', () => {
         if (!window.jogoAtual) return;
-        
+
         const desistente = window.jogoAtual.jogadorAtual;
         const corDesistente = desistente.cor.toLowerCase();
         const vencedor = (corDesistente === 'brancas') ? 'Pretas' : 'Brancas';
-        
+
         finalizarPartida(`As ${corDesistente} desistiram. ${vencedor} venceram!`);
     });
 
     document.getElementById('btnEmpate').addEventListener('click', () => {
         if (!window.jogoAtual) return;
-        
+
         Swal.fire({
             title: 'Propor Empate',
             text: 'Aceita o empate?',
@@ -192,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 box.classList.remove('ativo');
                 controles.classList.remove('ativo');
                 telaInicial.style.display = 'flex';
-                
+
                 $('.board').empty();
                 window.jogoAtual = null;
             }
@@ -200,3 +257,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
+
+function atualizarLabels() {
+    const letrasNormal = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const letrasInvertido = [...letrasNormal].reverse();
+
+    const numerosNormal = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    const numerosInvertido = [...numerosNormal].reverse();
+
+    // Se o jogador escolheu as pretas:
+    // → Pretas ficam embaixo
+    // → Letras devem inverter
+    // → Números devem inverter
+    const usarLetras = window.perspectivaPretas ? letrasInvertido : letrasNormal;
+    const usarNumeros = window.perspectivaPretas ? numerosInvertido : numerosNormal;
+
+    // Atualiza as letras superior e inferior
+    document.querySelectorAll('.letters-top span')
+        .forEach((el, i) => el.textContent = usarLetras[i]);
+
+    document.querySelectorAll('.letters-bottom span')
+        .forEach((el, i) => el.textContent = usarLetras[i]);
+
+    // Atualiza os números laterais
+    document.querySelectorAll('.numbers-left span')
+        .forEach((el, i) => el.textContent = usarNumeros[i]);
+
+    document.querySelectorAll('.numbers-right span')
+        .forEach((el, i) => el.textContent = usarNumeros[i]);
+}
+window.atualizarLabels = atualizarLabels;

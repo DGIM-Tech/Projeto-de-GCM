@@ -2,12 +2,21 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <!-- OBRIGATÓRIO PARA FUNCIONAR NO CELULAR -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <title>Xadrez com IA</title>
+    
+    <!-- Seus arquivos CSS externos -->
     <link href="css/style.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <style>
-        /* Tela inicial */
+        /* =========================================================
+           ESTILOS GERAIS (DESKTOP E BASE)
+           ========================================================= */
+        
+        /* Tela inicial (Full Screen) */
         .tela-inicial {
             position: fixed; inset: 0; background: #0E7886;
             display: flex; flex-direction: column; justify-content: center;
@@ -21,8 +30,33 @@
         }
         .tela-inicial button:hover { background: #0b5f68; color: white; }
 
-        .box, .controles { visibility: visible; opacity: 1 }
-        .box.ativo, .controles.ativo { visibility: visible; opacity: 1; }
+        /* Container Principal do Jogo */
+        .box {
+            display: flex; /* No PC, fica um ao lado do outro */
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px;
+            visibility: visible; opacity: 1;
+        }
+        
+       .stats {
+    /* Mude de 200px para 250px (ou 300px se preferir) */
+    width: 250px; 
+    background: rgba(255,255,255,0.8);
+    padding: 10px;
+    border-radius: 8px;
+    /* Adicione box-shadow para destaque visual (opcional) */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+}
+
+        .controles {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            visibility: visible; opacity: 1;
+        }
 
         .btn-controle {
             padding: 10px 25px; margin: 5px; border: none; border-radius: 6px;
@@ -31,133 +65,164 @@
         .vermelho { background: #dc3545; color: white; }
         .cinza { background: #6c757d; color: white; }
         .azul { background: #0d6efd; color: white; }
-        .btn-controle:hover { opacity: 0.85; }
 
+        /* --- BOTÃO MENU HAMBÚRGUER (MOBILE) --- */
         .menu-toggle {
-            display: none;
-            top: 15px;
-            right: 15px;
-            z-index: 3000;
-            background: #0E7886;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 10px 14px;
-            font-size: 1.4rem;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: none; /* Escondido no PC */
+            position: fixed; top: 15px; right: 15px; z-index: 5000;
+            background: #0E7886; color: #fff; border: none; border-radius: 6px;
+            padding: 10px 14px; font-size: 1.5rem; cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
+        /* --- MENU LATERAL DESLIZANTE (MOBILE) --- */
         .menu-lateral {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 80%;
-            max-width: 320px;
-            height: 100vh;
-            background: #fff;
-            box-shadow: -3px 0 10px rgba(0,0,0,0.3);
-            z-index: 2500;
-            padding: 20px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
+            display: none; /* Escondido por padrão */
+            position: fixed; top: 0; right: 0; width: 85%; max-width: 320px; height: 100vh;
+            background: #fff; box-shadow: -3px 0 10px rgba(0,0,0,0.3); z-index: 5500;
+            padding: 20px; transform: translateX(100%); transition: transform 0.3s ease;
             overflow-y: auto;
         }
-
-        .menu-lateral.ativo {
-            display: block;
-            transform: translateX(0);
-        }
+        .menu-lateral.ativo { display: block; transform: translateX(0); }
 
         .close-menu {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #B20E0E;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 1rem;
-            cursor: pointer;
+            position: absolute; top: 15px; right: 15px;
+            background: #B20E0E; color: #fff; border: none; border-radius: 50%;
+            width: 32px; height: 32px; font-size: 1rem; cursor: pointer;
         }
 
-        .menu-content h3 {
-            text-align: center;
-            margin-bottom: 10px;
-            color: #0E7886;
-        }
+        .menu-content h3 { text-align: center; margin-bottom: 10px; color: #0E7886; }
+/* =========================================================
+   RESPONSIVIDADE (CELULAR)
+   ========================================================= */
+@media (max-width: 768px) {
+	body {
+		/* Remove qualquer padding/margin extra que possa empurrar o layout */
+		padding: 0;
+		margin: 0;
+		overflow-x: hidden;
+	}
 
-        @media (max-width: 768px) {
-            .stats { display: none; }
-            .menu-toggle { display: block; }
-        }
+	.box {
+		/* Organiza o layout principal para centralizar */
+		flex-direction: column;
+		align-items: center;
+		width: 100%;
+		gap: 15px;
+		margin: 15px auto;
+	}
 
-        /* ===== RESPONSIVIDADE ===== */
-        @media (max-width: 768px) {
-            body {
-                overflow-x: hidden;
-                margin: 0;
-                padding: 0;
-                background-color: #f0f0f0;
-            }
+	/* Ocultar stats normais no celular */
+	.stats {
+		display: none;
+	}
 
-            .box {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                padding-top: 70px; /* espaço para o ícone ☰ */
-                width: 100%;
-            }
+	.menu-toggle {
+		display: block;
+	}
 
-            /* Move o tabuleiro um pouco para cima e para a esquerda */
-            .board-wrapper {
-                position: relative;
-                top: -60px; /* sobe o tabuleiro */
-                left: -30px; /* move para a esquerda */
-                transition: all 0.3s ease;
-            }
+	/* === ENVOLTORIO DO TABULEIRO (CORREÇÃO DE FIT) === */
+	.board-wrapper {
+		order: 1;
+		/* Remove o scale e usa o tamanho do celular */
+		transform: none; 
+		width: 100%; 
+		max-width: 100vw;
+		/* Adiciona padding interno para "empurrar" as letras e números */
+		/* O valor 5px nas laterais garante um respiro e evita cortes */
+		padding: 5px; 
+		box-sizing: border-box; 
+	}
+	
+	/* 1. Definir um tamanho menor para as casas (50px) para caberem */
+	.square-board {
+		width: 50px; /* Reduzido de 64px */
+		height: 50px;
+	}
 
-            /* Garante que letras e números acompanhem */
-            .letters-top,
-            .letters-bottom,
-            .numbers-left,
-            .numbers-right {
-                position: relative;
-                /* left: -30px; */
-            }
+	/* 2. Ajustar o grid do tabuleiro para 8x50px = 400px */
+	.board {
+		grid-template-columns: repeat(8, 50px);
+		grid-template-rows: repeat(8, 50px);
+		width: 400px; /* 50px * 8 */
+		height: 400px; /* 50px * 8 */
+	}
 
-            .controles {
-                margin-top: -120px;
-                display: flex;
-                gap: 15px;
-                transition: all 0.3s ease;
-            }
+	/* 3. Ajustar as linhas de letras para 400px de largura */
+	.letters-top,
+	.letters-bottom {
+		width: 400px; /* Deve ser igual à largura do .board */
+		grid-template-columns: repeat(8, 50px);
+		font-size: 12px;
+		margin: 3px 0;
+	}
 
-            /* Ajusta os próprios botões */
-            .controles button {
-                margin: 0 2px; /* reduz margem lateral */
-                padding: 8px 12px; /* mantém tamanho equilibrado */
-            }
+	/* 4. Ajustar as numerações laterais para 50px de altura */
+	.numbers-left,
+	.numbers-right {
+		grid-template-rows: repeat(8, 50px);
+		font-size: 12px;
+		margin: 3px 0;
+	}
+	
+	/* 5. Ajustar o tamanho das peças */
+	.piece {
+		width: 50px;
+		height: 50px;
+	}
 
-            .menu-toggle {
-                position: fixed;
-                top: 15px;
-                right: 15px;
-                z-index: 4000;
-            }
-        }
+	.controles {
+		flex-direction: column;
+		align-items: center;
+		width: 100%;
+		gap: 10px;
+	}
 
+	.btn-controle {
+		width: 90%;
+		font-size: 1rem;
+		padding: 12px 0;
+	}
+	
+	/* Manter a seção para celulares pequenos, se necessário, ajustando o tamanho das casas para, por exemplo, 40px */
+	@media (max-width: 480px) {
+		.board {
+			grid-template-columns: repeat(8, 40px);
+			grid-template-rows: repeat(8, 40px);
+			width: 320px;
+			height: 320px;
+		}
+
+		.letters-top,
+		.letters-bottom {
+			width: 320px;
+			grid-template-columns: repeat(8, 40px);
+		}
+
+		.numbers-left,
+		.numbers-right {
+			grid-template-rows: repeat(8, 40px);
+		}
+		
+		.piece {
+			width: 40px;
+			height: 40px;
+		}
+		
+		.square-board {
+			width: 40px;
+			height: 40px;
+		}
+	}
+}
     </style>
 </head>
 
 <body>
+    <!-- Botão Menu (Hambúrguer) -->
     <button id="menuToggle" class="menu-toggle">☰</button>
 
-    <!-- Painel lateral -->
+    <!-- Menu Lateral (Mobile) -->
     <div id="menuLateral" class="menu-lateral">
         <button id="closeMenu" class="close-menu">✕</button>
         <div class="menu-content">
@@ -173,12 +238,10 @@
                 </div>
             </div>
 
-            
             <h3>Histórico de Jogadas</h3>
             <div class="notation">
                 <div class="notation-content" id="notationMobile"></div>
             </div>
-            
         </div>
     </div>
 
@@ -190,8 +253,10 @@
         <button id="btnTutorial">Modo Tutorial</button>
     </div>
 
-    <!-- Área principal -->
+    <!-- Área principal do Jogo -->
     <div class="box">
+        
+        <!-- ESTE É O BLOCO QUE ESTAVA APARECENDO ERRADO (STATS ESQUERDA) -->
         <div class="stats">
             <div class="capturadas">
                 <h3>Peças Capturadas</h3>
@@ -206,6 +271,7 @@
             </div>
         </div>
 
+        <!-- Tabuleiro -->
         <div class="board-wrapper">
             <div class="letters-top"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
             <div class="board-row">
@@ -216,111 +282,124 @@
             <div class="letters-bottom"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
         </div>
 
+        <!-- ESTE É O BLOCO QUE ESTAVA APARECENDO ERRADO (STATS DIREITA) -->
         <div class="stats">
             <div class="notation">
                 <h3>Histórico de Jogadas</h3>
                 <div class="notation-content" id="notationPrincipal"></div>
             </div>
         </div>
-
     </div>
 
+    <!-- Botões de Ação -->
     <div class="controles">
         <button id="btnDesistir" class="btn-controle vermelho">Desistir</button>
         <button id="btnEmpate" class="btn-controle cinza">Pedir Empate</button>
         <button id="btnVoltarMenu" class="btn-controle azul">Voltar ao Menu</button>
     </div>
+
+    <!-- Modal de Promoção -->
     <div id="promotionModal" style="display: none;">
-    <div class="modal-content">
-        <h4>Promover Peão para:</h4>
-        <div class="promotion-choices">
-            <div class="promote piece queen-white" data-piece="queen"></div>
-            <div class="promote piece rook-white" data-piece="rook"></div>
-            <div class="promote piece bishop-white" data-piece="bishop"></div>
-            <div class="promote piece knight-white" data-piece="knight"></div>
+        <div class="modal-content">
+            <h3>Promover Peão para:</h3>
+            <div class="promotion-choices">
+                <button class="promote" data-piece="queen">♕ Rainha</button>
+                <button class="promote" data-piece="rook">♖ Torre</button>
+                <button class="promote" data-piece="bishop">♗ Bispo</button>
+                <button class="promote" data-piece="knight">♘ Cavalo</button>
+            </div>
         </div>
     </div>
-</div>
 
+    <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    <script type="module" src="js/index.js"></script>
-    <script src="js/classes/Jogo.js"></script>
-    <!-- Chess.js (lógica de xadrez) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
-
-    <!-- Chessboard.js (tabuleiro visual) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     
+    <script type="module" src="js/index.js"></script>
+    <script type="module" src="js/classes/Jogo.js"></script>
+
     <script>
         const menuToggle = document.getElementById('menuToggle');
         const telaInicial = document.getElementById('telaInicial');
         const menuLateral = document.getElementById('menuLateral');
         const promotionModal = document.getElementById('promotionModal');
 
-        document.getElementById('menuToggle').addEventListener('click', () => {
+        // --- LÓGICA DO MENU ---
+        menuToggle.addEventListener('click', () => {
             menuLateral.classList.add('ativo');
+            atualizarVisibilidadeBotao();
         });
+        
         document.getElementById('closeMenu').addEventListener('click', () => {
             menuLateral.classList.remove('ativo');
+            atualizarVisibilidadeBotao();
         });
 
-        function atualizarVisibilidadeMenu() {
-            const modalAberto =
-                (telaInicial && telaInicial.style.display !== 'none') ||
-                (menuLateral && menuLateral.classList.contains('ativo')) ||
-                (promotionModal && promotionModal.style.display === 'block');
+        // Função que decide se o botão hambúrguer deve aparecer
+        function atualizarVisibilidadeBotao() {
+            // Pega o estilo real dos elementos (mesmo se hidden por CSS)
+            const styleTelaInicial = window.getComputedStyle(telaInicial);
+            const stylePromo = window.getComputedStyle(promotionModal);
 
-            if (window.innerWidth <= 768 && !modalAberto) {
+            const telaInicialAberta = styleTelaInicial.display !== 'none' && styleTelaInicial.visibility !== 'hidden';
+            const menuAberto = menuLateral.classList.contains('ativo');
+            const promoAberta = stylePromo.display !== 'none';
+            const isMobile = window.innerWidth <= 768;
+
+            // Só mostra o botão SE:
+            // 1. For Mobile
+            // 2. Tela Inicial NÃO estiver visível
+            // 3. Menu Lateral NÃO estiver aberto
+            // 4. Modal de Promoção NÃO estiver aberto
+            if (isMobile && !telaInicialAberta && !menuAberto && !promoAberta) {
                 menuToggle.style.display = 'block';
             } else {
                 menuToggle.style.display = 'none';
             }
         }
 
-        const observer = new MutationObserver(atualizarVisibilidadeMenu);
-        observer.observe(telaInicial, { attributes: true, attributeFilter: ['style'] });
-        if (promotionModal) observer.observe(promotionModal, { attributes: true, attributeFilter: ['style'] });
-        observer.observe(menuLateral, { attributes: true, attributeFilter: ['class'] });
-        window.addEventListener('resize', atualizarVisibilidadeMenu);
-        atualizarVisibilidadeMenu();
+        // Observer para detectar mudanças automáticas na tela
+        const observerConfig = { attributes: true, attributeFilter: ['style', 'class'] };
+        const observer = new MutationObserver(atualizarVisibilidadeBotao);
+        
+        if (telaInicial) observer.observe(telaInicial, observerConfig);
+        if (promotionModal) observer.observe(promotionModal, observerConfig);
+        if (menuLateral) observer.observe(menuLateral, observerConfig);
 
-        /* === ELEMENTOS === */
-        // CAPTURAS
+        window.addEventListener('resize', atualizarVisibilidadeBotao);
+        
+        // Executa ao carregar
+        atualizarVisibilidadeBotao();
+
+        /* === SINCRONIZAÇÃO DE DADOS (PC <-> MOBILE) === */
         const capturasBrancasMobile = document.getElementById('capturasBrancasMobile');
         const capturasPretasMobile = document.getElementById('capturasPretasMobile');
         const capturasBrancasPrincipal = document.getElementById('capturasBrancasPrincipal');
         const capturasPretasPrincipal = document.getElementById('capturasPretasPrincipal');
-
-        // NOTATION
         const notationMobile = document.getElementById('notationMobile');
         const notationPrincipal = document.getElementById('notationPrincipal');
 
-
-        /* === SINCRONIZAR CAPTURAS === */
+        // Sincroniza Capturas
         function sincronizarCapturas() {
-            capturasBrancasPrincipal.innerHTML = capturasBrancasMobile.innerHTML;
-            capturasPretasPrincipal.innerHTML = capturasPretasMobile.innerHTML;
+            if(capturasBrancasPrincipal && capturasBrancasMobile) 
+                capturasBrancasPrincipal.innerHTML = capturasBrancasMobile.innerHTML;
+            if(capturasPretasPrincipal && capturasPretasMobile)
+                capturasPretasPrincipal.innerHTML = capturasPretasMobile.innerHTML;
         }
 
         const observerCapturas = new MutationObserver(sincronizarCapturas);
-        observerCapturas.observe(capturasBrancasMobile, { childList: true, subtree: true });
-        observerCapturas.observe(capturasPretasMobile, { childList: true, subtree: true });
+        if(capturasBrancasMobile) observerCapturas.observe(capturasBrancasMobile, { childList: true, subtree: true });
+        if(capturasPretasMobile) observerCapturas.observe(capturasPretasMobile, { childList: true, subtree: true });
 
-
-        /* === SINCRONIZAR HISTÓRICO DE JOGADAS === */
+        // Sincroniza Histórico
         function sincronizarHistorico() {
-            notationPrincipal.innerHTML = notationMobile.innerHTML;
+            if(notationPrincipal && notationMobile)
+                notationPrincipal.innerHTML = notationMobile.innerHTML;
         }
 
-        // Observa mudanças no histórico (mobile → principal)
         const observerHistorico = new MutationObserver(sincronizarHistorico);
-        observerHistorico.observe(notationMobile, { childList: true, subtree: true });
-
-
-        
+        if(notationMobile) observerHistorico.observe(notationMobile, { childList: true, subtree: true });
     </script>
 </body>
 </html>

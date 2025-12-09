@@ -41,6 +41,7 @@ export class Jogo {
             const movimentoIA = await this.jogadorAtual.fazerMovimento(this);
             $('.board').removeClass('ia-thinking');
 
+
             if (movimentoIA) {
                 const { peca, casaOrigem, casaDestino } = movimentoIA;
                 this.pecaEscolhida = peca;
@@ -63,6 +64,7 @@ export class Jogo {
             timerProgressBar: true
         });
     }
+
     _tentarMoverPeca(casaAlvo) {
         if (this.clicou !== 1 && this.jogadorAtual.tipo === 'Humano') {
             this._mostrarToast('Selecione uma peça para mover.', 'info');
@@ -95,13 +97,14 @@ export class Jogo {
         const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
 
         if (isPromocao) {
-            console.log("Promoção detectada - pausando turno para escolha da peça");
+            // console.log("Promoção detectada - pausando turno para escolha da peça");
             return;
         }
 
-        console.log("Sem promoção - finalizando turno normalmente");
+        // console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
+
     _registrarEventos() {
         const self = this;
         $('body').off('click.jogo').on('click.jogo', '.piece', function (e) {
@@ -166,11 +169,11 @@ export class Jogo {
         const isPromocao = this._tratarPromocao(pecaMovida, casaDestinoId, casaOrigemId, pecaCapturada);
 
         if (isPromocao) {
-            console.log("Promoção detectada - pausando turno para escolha da peça");
+            // console.log("Promoção detectada - pausando turno para escolha da peça");
             return;
         }
 
-        console.log("Sem promoção - finalizando turno normalmente");
+        // console.log("Sem promoção - finalizando turno normalmente");
         this.finalizarTurno(casaOrigemId, casaDestinoId, pecaMovida, pecaCapturada, infoRoque);
     }
     // continuarTurnoAposPromocao(origem, destino, peca, pecaCapturada, infoRoque, promocaoPara) {
@@ -197,16 +200,16 @@ export class Jogo {
             this.jogadorAtual = (this.jogadorAtual === this.jogador1) ? this.jogador2 : this.jogador1;
             this.clicou = 0;
             this.pecaEscolhida = null;
+
+            // 🟢 CHAMADA DO MÉTODO DE ROTAÇÃO AQUI 
+            // Somente no modo 'amigo' (Humano vs Humano)
+            if (this.jogador1.tipo === 'Humano' && this.jogador2.tipo === 'Humano') {
+                this.girarTabuleiro();
+            }
+
             this.proximoTurno();
         }
         // Salva o estado do jogo no cache após cada jogada
-        try {
-            const estado = this.salvarEstado();
-            localStorage.setItem('estadoJogo', JSON.stringify(estado));
-            // console.log('💾 Estado do jogo salvo automaticamente.');
-        } catch (e) {
-            console.error('Erro ao salvar estado do jogo:', e);
-        }
     }
 
     _verificarCondicoesDeFimDeJogo() {
@@ -264,6 +267,7 @@ export class Jogo {
             }
         }
     }
+
     _mostrarVencedorAnimado(vencedor) {
         console.log(`CHAMANDO _mostrarVencedorAnimado: ${vencedor}`);
 
@@ -347,7 +351,7 @@ export class Jogo {
                 console.log(`Movimentos legais: ${movimentosLegais.length} → ${movimentosLegais.join(', ')}`);
 
                 if (movimentosLegais.length > 0) {
-                    console.log(`✅ ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
+                    // console.log(`✅ ENCONTRADOS MOVIMENTOS LEGAIS para ${cor}!`);
                     return true;
                 }
             } catch (error) {
@@ -358,6 +362,7 @@ export class Jogo {
         console.log(`❌ NENHUM MOVIMENTO LEGAL para ${cor}. Total: ${movimentosLegaisTotais}`);
         return movimentosLegaisTotais > 0;
     }
+
     _mostrarEmpate() {
         Swal.fire({
             title: 'Afogamento!',
@@ -393,20 +398,20 @@ export class Jogo {
             if (cor === 'white') {
                 if (origem === 'a1') {
                     this.whiteRooksMoved.a1 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre branca 'a1' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre branca 'a1' moveu-se.`);
                 }
                 if (origem === 'h1') {
                     this.whiteRooksMoved.h1 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre branca 'h1' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre branca 'h1' moveu-se.`);
                 }
             } else { // 'black'
                 if (origem === 'a8') {
                     this.blackRooksMoved.a8 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre preta 'a8' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre preta 'a8' moveu-se.`);
                 }
                 if (origem === 'h8') {
                     this.blackRooksMoved.h8 = true;
-                    console.log(`♜ FLAG DE ROQUE: Torre preta 'h8' moveu-se.`);
+                    // console.log(`♜ FLAG DE ROQUE: Torre preta 'h8' moveu-se.`);
                 }
             }
         }
@@ -478,6 +483,49 @@ export class Jogo {
         });
 
         this.atualizarInterfaceHistorico();
+        this.atualizarInterfaceHistoricoMobile();
+    }
+
+    atualizarInterfaceHistoricoMobile() {
+        const notationMobile = document.getElementById('notationMobile');
+        if (!notationMobile) return;
+
+        let html = `
+            <table class="notation-mobile-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Brancas</th>
+                        <th>Pretas</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        for (let i = 0; i < this.historicoDeJogadas.length; i += 2) {
+            const moveIndex = (i / 2) + 1;
+            const jogadaBrancas = this.historicoDeJogadas[i]
+                ? this.historicoDeJogadas[i].descricao
+                : '';
+            const jogadaPretas = this.historicoDeJogadas[i + 1]
+                ? this.historicoDeJogadas[i + 1].descricao
+                : '';
+
+            html += `
+                <tr>
+                    <td class="move-number">${moveIndex}.</td>
+                    <td class="brancas-move">${jogadaBrancas}</td>
+                    <td class="pretas-move">${jogadaPretas}</td>
+                </tr>
+            `;
+        }
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        notationMobile.innerHTML = html;
     }
 
     atualizarInterfaceHistorico() {
@@ -729,6 +777,7 @@ export class Jogo {
             console.error(`♜❌ ERRO: Torre não encontrada em ${torreOrigem}`);
         }
     }
+
     promocaoConcluida(tipoPecaEscolhida) {
         if (!this.movimentoPendente) {
             console.error("Nenhum movimento pendente para promoção!");
@@ -847,53 +896,161 @@ export class Jogo {
         }
         notacao += destino;
         return notacao;
+
+
+    }
+    girarPecasMobile() {
+        const pecas = document.querySelectorAll('.piece');
+        if (!pecas.length) return;
+
+        // Verifica se está no modo mobile
+        if (window.innerWidth <= 768) {
+            // Alterna a perspectiva baseada na vez
+            const isGirandoParaPretas = (this.vezDo === 'black');
+
+            pecas.forEach(peca => {
+                if (isGirandoParaPretas) {
+                    peca.style.transform = 'rotate(180deg)';
+                } else {
+                    peca.style.transform = 'rotate(0deg)';
+                }
+            });
+
+            // Atualiza labels também
+            this._atualizarLabelsTutorial(isGirandoParaPretas);
+        }
     }
 
-    // salvarEstado() {
-    //     const pecas = {};
-    //     $('.square-board').each(function () {
-    //         const id = $(this).attr('id');
-    //         const peca = $(this).find('.piece');
-    //         pecas[id] = peca.length ? peca.attr('class') : null;
-    //     });
+    // Modifique o girarTabuleiro original para não girar no mobile
+girarTabuleiro() {
+    const board = document.querySelector('.board');
+    if (!board) return;
 
-    //     return {
-    //         pecas,
-    //         vezDo: this.vezDo,
-    //         jogador1: this.jogador1,
-    //         jogador2: this.jogador2,
-    //         historicoDeJogadas: this.historicoDeJogadas,
-    //         whiteKingMoved: this.whiteKingMoved,
-    //         blackKingMoved: this.blackKingMoved,
-    //         whiteRooksMoved: this.whiteRooksMoved,
-    //         blackRooksMoved: this.blackRooksMoved,
-    //         enPassantTarget: this.enPassantTarget
-    //     };
-    // }
+    // Alterna a perspectiva
+    const isGirandoParaPretas = (this.vezDo === 'black');
 
-    // salvarEstadoNoCache() {
-    //     localStorage.setItem('estadoJogo', JSON.stringify(this.salvarEstado()));
-    // }
+    // No mobile, gira apenas peças
+    if (window.innerWidth <= 768) {
+        this.girarPecasMobile(isGirandoParaPretas);
+    } 
+    // No desktop, gira tabuleiro e reseta peças
+    else {
+        // Remove qualquer transformação nas peças (reset do mobile)
+        this._resetarTransformacoesPecas();
+        
+        // Gira o tabuleiro normalmente
+        if (isGirandoParaPretas) {
+            board.classList.add('girarPretas');
+        } else {
+            board.classList.remove('girarPretas');
+        }
+    }
 
-    // carregarEstado(estado) {
-    //     $('.square-board').empty();
-    //     for (const casa in estado.pecas) {
-    //         if (estado.pecas[casa]) {
-    //             $(`#${casa}`).html(`<div class="${estado.pecas[casa]}"></div>`);
-    //         }
-    //     }
+    // Sempre atualiza labels
+    this._atualizarLabelsTutorial(isGirandoParaPretas);
+}
 
-    //     this.vezDo = estado.vezDo;
-    //     this.jogador1 = estado.jogador1;
-    //     this.jogador2 = estado.jogador2;
-    //     this.historicoDeJogadas = estado.historicoDeJogadas || [];
-    //     this.whiteKingMoved = estado.whiteKingMoved;
-    //     this.blackKingMoved = estado.blackKingMoved;
-    //     this.whiteRooksMoved = estado.whiteRooksMoved;
-    //     this.blackRooksMoved = estado.blackRooksMoved;
-    //     this.enPassantTarget = estado.enPassantTarget;
+// Função para girar apenas as peças no mobile
+girarPecasMobile(isGirandoParaPretas) {
+    const pecas = document.querySelectorAll('.piece');
+    if (!pecas.length) return;
+    
+    // Remove classe girarPretas do tabuleiro no mobile
+    const board = document.querySelector('.board');
+    if (board) {
+        board.classList.remove('girarPretas');
+    }
+    
+    // Remove transformação das casas no mobile
+    document.querySelectorAll('.square-board').forEach(casa => {
+        casa.style.transform = '';
+    });
+    
+    // Aplica rotação nas peças
+    pecas.forEach(peca => {
+        peca.style.transform = isGirandoParaPretas ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+}
 
-    //     this._registrarEventos();
-    //     console.log('♟️ Estado restaurado do cache.');
-    // }
+// Função para resetar transformações das peças (quando volta para desktop)
+_resetarTransformacoesPecas() {
+    const pecas = document.querySelectorAll('.piece');
+    pecas.forEach(peca => {
+        peca.style.transform = ''; // Remove transformação inline
+    });
+}
+
+// Função para girar peças quando o menu abre no mobile
+ajustarOrientacaoPecasMobile() {
+    const menuLateral = document.getElementById('menuLateral');
+    if (!menuLateral) return;
+
+    const pecas = document.querySelectorAll('.piece');
+    if (!pecas.length) return;
+
+    // Só aplica no mobile
+    if (window.innerWidth <= 768) {
+        const menuAberto = menuLateral.classList.contains('aberto');
+        const isGirandoParaPretas = (this.vezDo === 'black');
+        
+        // Se menu está abrindo, salva estado atual
+        if (menuAberto) {
+            pecas.forEach(peca => {
+                peca.dataset.originalTransform = peca.style.transform || '';
+            });
+        }
+        
+        pecas.forEach(peca => {
+            if (menuAberto) {
+                // Menu aberto: inverte a orientação
+                if (isGirandoParaPretas) {
+                    peca.style.transform = 'rotate(0deg)';
+                } else {
+                    peca.style.transform = 'rotate(180deg)';
+                }
+            } else {
+                // Menu fechado: restaura orientação original
+                const originalTransform = peca.dataset.originalTransform;
+                if (originalTransform !== undefined) {
+                    peca.style.transform = originalTransform;
+                } else {
+                    peca.style.transform = isGirandoParaPretas ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            }
+        });
+    } 
+    // No desktop, garante que peças estão sem transformação
+    else {
+        this._resetarTransformacoesPecas();
+    }
+}
+
+ 
+
+
+    _atualizarLabelsTutorial(perspectivaPretas) {
+        const letrasNormal = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const letrasInvertido = [...letrasNormal].reverse();
+
+        const numerosNormal = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        const numerosInvertido = [...numerosNormal].reverse();
+
+        const usarLetras = perspectivaPretas ? letrasInvertido : letrasNormal;
+
+        const usarNumeros = perspectivaPretas ? numerosInvertido : numerosNormal;
+
+        // Atualiza as letras superior e inferior
+        document.querySelectorAll('.letters-top span')
+            .forEach((el, i) => el.textContent = usarLetras[i]);
+
+        document.querySelectorAll('.letters-bottom span')
+            .forEach((el, i) => el.textContent = usarLetras[i]);
+
+        // Atualiza os números laterais
+        document.querySelectorAll('.numbers-left span')
+            .forEach((el, i) => el.textContent = usarNumeros[i]);
+
+        document.querySelectorAll('.numbers-right span')
+            .forEach((el, i) => el.textContent = usarNumeros[i]);
+    }
 }

@@ -14,37 +14,44 @@ export class Tabuleiro {
             e1: 'king-white', f1: 'bishop-white', g1: 'knight-white', h1: 'rook-white'
         };
     }
-     /**
-     * Verifica se uma posição (ex: 'e4') é válida no tabuleiro.
-     * @param {string} posicao 
-     * @returns {boolean}
-     */
+    /**
+    * Verifica se uma posição (ex: 'e4') é válida no tabuleiro.
+    * @param {string} posicao 
+    * @returns {boolean}
+    */
     posicaoValida(posicao) {
         if (typeof posicao !== 'string' || posicao.length !== 2) return false;
-        
+
         const coluna = posicao[0];
         const linha = parseInt(posicao[1], 10);
-        
+
         const colunasValidas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
         return colunasValidas.includes(coluna) && linha >= 1 && linha <= 8;
     }
 
 
-  printBoard() {
-    $('.board').empty(); // <-- ESTA É A LINHA QUE CORRIGE O BUG!
-    var light = 1;
-    var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    for (var l = 8; l >= 1; --l) {
-        for (var c = 0; c < columns.length; ++c) {
-            var sq = columns[c] + l;
-            var lightdark = (light == 1) ? 'light' : 'dark';
-            $('.board').append('<div class="square-board ' + lightdark + '" id="' + sq + '"></div>');
+    printBoard() {
+        $('.board').empty();
+
+        let light = 1;
+        const columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+        for (let l = 8; l >= 1; l--) {
+            for (let c of columns) {
+                const sq = c + l;
+                const cor = light ? 'light' : 'dark';
+
+                $('.board').append(`
+                <div class="square-board ${cor}" id="${sq}"></div>
+            `);
+
+                light ^= 1;
+            }
             light ^= 1;
         }
-        light ^= 1;
     }
-}
+
 
     inicializarPecas() {
         $('.square-board').each((_, square) => {
@@ -59,7 +66,7 @@ export class Tabuleiro {
         this.printBoard();
         this.inicializarPecas();
     }
-     getTabuleiroAtual() {
+    getTabuleiroAtual() {
         const tabuleiroAtual = {};
         $('.piece').each((_, peca) => {
             const casa = $(peca).parent().attr('id');
