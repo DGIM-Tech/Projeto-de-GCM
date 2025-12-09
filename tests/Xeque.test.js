@@ -147,4 +147,22 @@ describe("Testes da classe Xeque", () => {
         expect(movimentoMock.isSquareAttacked).toHaveBeenCalledWith("e8", "white");
     });
 
+    test('Branch negativo: fallback encontrado mas nenhuma peça é o rei', () => {
+    // Obriga a cair no fallback
+        document.body.innerHTML = `
+            <div id="a1"><div class="piece pawn white"></div></div>
+            <div id="b2"><div class="piece rook black"></div></div>
+        `;
+
+        movimentoMock.isSquareAttacked = jest.fn();
+
+        const result = Xeque.estaEmXeque('white', movimentoMock);
+
+        // Nenhum rei encontrado → false
+        expect(result).toBe(false);
+
+        // Confirmando: isSquareAttacked NÃO foi chamado
+        expect(movimentoMock.isSquareAttacked).not.toHaveBeenCalled();
+    });
+
 });
