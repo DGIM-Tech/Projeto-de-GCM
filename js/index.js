@@ -116,22 +116,27 @@ document.addEventListener('DOMContentLoaded', () => {
             html: `
         <div class="config-modal">
 
+            <!-- DIFICULDADE -->
             <div class="config-section">
                 <h4>Dificuldade da IA</h4>
-                <div class="config-options">
-                    <label><input type="radio" name="dificuldade" value="iniciante" checked> Iniciante</label>
-                    <label><input type="radio" name="dificuldade" value="fácil">  Fácil</label>
-                    <label><input type="radio" name="dificuldade" value="médio">  Médio</label>
-                    <label><input type="radio" name="dificuldade" value="difícil">  Difícil</label>
+                <div class="select-list" id="listaDificuldade">
+                    <div class="select-card" data-group="dificuldade" data-value="fácil">Fácil</div>
+                    <div class="select-card" data-group="dificuldade" data-value="médio">Médio</div>
+                    <div class="select-card" data-group="dificuldade" data-value="difícil">Difícil</div>
                 </div>
+
+                <input type="hidden" id="dificuldade-escolhida">
             </div>
 
+            <!-- COR -->
             <div class="config-section">
                 <h4>Escolha sua Cor</h4>
-                <div class="config-options">
-                    <label><input type="radio" name="cor" value="brancas" checked> ⚪ Brancas</label>
-                    <label><input type="radio" name="cor" value="pretas"> ⚫ Pretas</label>
+                <div class="select-list" id="listaCor">
+                    <div class="select-card" data-group="cor" data-value="brancas">⚪ Brancas</div>
+                    <div class="select-card" data-group="cor" data-value="pretas">⚫ Pretas</div>
                 </div>
+
+                <input type="hidden" id="cor-escolhida" value="brancas">
             </div>
 
         </div>
@@ -141,14 +146,56 @@ document.addEventListener('DOMContentLoaded', () => {
             showCancelButton: true,
             confirmButtonText: '🎮 Jogar!',
             cancelButtonText: '❌ Cancelar',
-            confirmButtonColor: "#0E7886",
+            confirmButtonColor: "#00BB77",
             cancelButtonColor: "#555",
             borderRadius: "12px",
             allowOutsideClick: false,
-            preConfirm: () => ({
-                dificuldade: document.querySelector('input[name="dificuldade"]:checked').value,
-                corJogador: document.querySelector('input[name="cor"]:checked').value
-            })
+
+            /* --------------------------------------------------
+               ATIVA OS CARDS ASSIM QUE O SWEETALERT ABRE
+            --------------------------------------------------- */
+            didOpen: () => {
+
+                document.querySelectorAll('.select-card').forEach(card => {
+                    card.addEventListener('click', () => {
+
+                        const grupo = card.dataset.group;
+
+                        // Remove seleção do grupo inteiro
+                        document.querySelectorAll(`.select-card[data-group="${grupo}"]`)
+                            .forEach(c => c.classList.remove('selected'));
+
+                        // Marca o clicado
+                        card.classList.add('selected');
+
+                        // Atualiza os hidden inputs
+                        if (grupo === "dificuldade") {
+                            document.getElementById('dificuldade-escolhida').value =
+                                card.dataset.value;
+                        }
+
+                        if (grupo === "cor") {
+                            document.getElementById('cor-escolhida').value =
+                                card.dataset.value;
+                        }
+                    });
+                });
+            },
+
+            /* --------------------------------------------------
+               VALIDAÇÃO
+            --------------------------------------------------- */
+            preConfirm: () => {
+                const dificuldade = document.getElementById('dificuldade-escolhida').value;
+                const corJogador = document.getElementById('cor-escolhida').value;
+
+                if (!dificuldade) {
+                    Swal.showValidationMessage("Selecione uma dificuldade!");
+                    return false;
+                }
+
+                return { dificuldade, corJogador };
+            }
         }).then((result) => {
             if (result.isConfirmed) {
 

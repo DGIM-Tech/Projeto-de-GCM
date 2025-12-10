@@ -9,8 +9,7 @@ export class JogadorIA extends Jogador {
 
   async fazerMovimento(jogo) {
     const depthMap = {
-      iniciante: 1,
-      fácil: 2,
+      fácil: 1,
       médio: 5,
       difícil: 8
     };
