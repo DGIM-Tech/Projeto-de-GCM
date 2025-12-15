@@ -20,6 +20,10 @@ mas se estende a habilidades cognitivas essenciais que podem ser desenvolvidas d
 📝[Diagramas de classes e casos de uso](https://docs.google.com/document/d/1mWjICxbt6G5Om2x0gBHEF9W1pZezStDVpiu_HYPTdJE/edit?usp=sharing).<br />
 📝[Plano de testes para o projeto](https://docs.google.com/document/d/1sVIx8gnjCz628Db7wmPa86A2C7cSLLvw-cA6bVEkGy8/edit?usp=sharing).<br />
 
+## 📝 Artigo
+
+📝[Implementação de um Jogo Digital de Xadrez com Foco Educacional](https://drive.google.com/file/d/1SDYJA_ODZ-DG_YQ_3RBWGbCiL3Ot2hSj/view).<br />
+
 ## Equipe
 :man_teacher: Docente: [Alysson Filgueira Milanez](https://github.com/alyssonfm).<br />
 :man_student: Discente: [Gerson Breno Fagundes de Oliveira](https://github.com/gersonbrenof).<br />
