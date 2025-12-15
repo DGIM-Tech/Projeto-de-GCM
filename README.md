@@ -14,12 +14,15 @@ mas se estende a habilidades cognitivas essenciais que podem ser desenvolvidas d
 * **`teste`**: Uma brach edicada para testes de novas funcionalidaades e correções, garantindo a qualidade antes de migrar para `main`.
 
 ## 📝 Documentação
-   #### 1º unidade
-   ---
+
 📝[Definição do Projeto](https://docs.google.com/document/d/1upM3I_varPTCPzKFSBdW9acO60JDA7ycdH0IAgKeVjY/edit?usp=sharing).<br />
 📝[Lista inicial dos Requisitos](https://docs.google.com/document/d/1wHgc3APKebkgVvhtmkafM33uFKxWKmXZc2e9-D1z1y0/edit?usp=sharing).<br />
 📝[Diagramas de classes e casos de uso](https://docs.google.com/document/d/1mWjICxbt6G5Om2x0gBHEF9W1pZezStDVpiu_HYPTdJE/edit?usp=sharing).<br />
 📝[Plano de testes para o projeto](https://docs.google.com/document/d/1sVIx8gnjCz628Db7wmPa86A2C7cSLLvw-cA6bVEkGy8/edit?usp=sharing).<br />
+
+## 📝 Artigo
+
+📝[Implementação de um Jogo Digital de Xadrez com Foco Educacional](https://drive.google.com/file/d/1SDYJA_ODZ-DG_YQ_3RBWGbCiL3Ot2hSj/view).<br />
 
 ## Equipe
 :man_teacher: Docente: [Alysson Filgueira Milanez](https://github.com/alyssonfm).<br />
